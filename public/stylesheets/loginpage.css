@@ -1,0 +1,222 @@
+* {
+  margin: 0px; 
+  padding: 0px; 
+  box-sizing: border-box;
+}
+
+body, html {
+  height: 100%;
+  font-family: Poppins-Regular, sans-serif;
+}
+body{
+    background-color: #fafafa;
+}
+.limiter {
+  width: 90%;
+  margin: 0 auto;
+}
+#img11
+{
+    width:200px;
+
+}
+#tab {
+    border-collapse: collapse;
+    border: 2px solid  black;
+    
+    margin: 0; /* Space from this element (entire page) and others*/
+    padding: 0;
+   
+}
+.homemain{
+display: none;
+}
+.maindiv{
+  display: none;
+}
+.container{
+  display: none;
+  margin-bottom: 8%;
+}
+/*.container-login100 {
+  width: 100%;  
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+  background: #42e8f4;
+ }*/
+
+/*.wrap-login100 {
+  width: 960px;
+  background: #fff;
+  border-radius: 10px;
+ padding: 177px 130px 33px 95px;
+}
+*/
+#signin{
+    background-color: #ffffff;
+    margin-left: 105%;
+}
+#roleLimitsBoxWrapper {
+    text-align: center;
+    vertical-align: top;
+    padding-top: 2%;
+    padding-bottom: 2%;
+    padding-right: 12%;
+    padding-left: 12%;
+    margin-top: 0%;
+    margin-right: 12%;
+    margin-left: 12%;
+    margin-bottom: 4%;
+    background-color: #000000;
+    border-radius: 10px;
+    border: 1px solid #ffbc45;
+    position: relative;
+}
+user agent stylesheet
+div {
+    display: block;
+}
+
+div.boxHeading{
+    text-align: center;
+    padding-top: 2%;
+    padding-bottom: 0;
+    padding-right: 2%;
+    padding-left: 1%;
+    margin-left: 10%;
+    margin-right: 10%;
+      }
+div.name{
+    text-align: center;
+
+
+    margin-bottom: 4%;
+    / background-color: #e6fff2; /
+    / border-radius: 10px; /
+    / border: 1px solid #ffbc45; /
+    position: relative; 
+}
+
+user agent stylesheet
+div {
+    display: block;
+}
+#seltype {
+     border-radius: 14px;
+     font-size: 14px;
+    /* font-family: cursive;*/
+         /* margin-left: 250px;*/
+   width: 52%;
+}
+.form-control{
+margin-right: 196px;
+    margin-top: 10px;
+}
+
+/*.btn btn-primary{
+    background-color: #28bbbb;
+}*/
+.btn{
+    background-color: #28bbbb;
+    color: #ffffff;
+   border: 2px solid black;
+    
+}
+#maindivIndex {
+    width: auto;
+    height: auto;
+    font-family: "helvetica";
+    margin-left: 20%;
+    margin-right: 20%;
+    margin-top: 2%;
+    margin-bottom: 5%;
+    / padding-bottom: 3%; /
+    background: #dddddd;
+    border-radius: 20px;
+    background: -webkit-linear-gradient(#28bbbb, #28bbbb);
+    filter: drop-shadow(8px 8px 10px grey);
+    position: relative;
+  }
+div.titleBanner{
+    padding-top: 4%;
+    padding-bottom: 2%;
+   background-color: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #28bbbb;
+    font-family: "helvetica";
+    position: relative;
+    }
+.titleBanner img{
+    height: 40px;
+    width: 40px;
+
+}
+.titleBanner.font{
+  padding-top: 10px;
+
+}
+.abcRioButtonIcon {
+    display: none;
+}
+span.abcRioButtonContents[style]{
+  font-size: 20px !important;
+  color:#333333;
+  font-weight: bold;
+}
+div.maindivIndex
+{
+    width: auto;
+    height: auto;
+    font-family: "helvetica";
+    margin-left: 20%;
+    margin-right: 20%;
+    margin-top: 2%;
+    margin-bottom: 5%;
+    / padding-bottom: 3%; /
+    background: #dddddd;
+    border-radius: 20px;
+    background: -webkit-linear-gradient(#28bbbb, #28bbbb);
+    filter: drop-shadow(8px 8px 10px grey);
+    position: relative;
+    }
+.titleBanner img {
+    height: 95px;
+    width: 96px;
+}
+  .card{
+    background-color: #ffffff;
+     border-radius: 0px 0px 0px 0px;
+-moz-border-radius: 0px 0px 0px 0px;
+-webkit-border-radius: 0px 0px 0px 0px;
+border: 2px solid #000000;
+margin-bottom: 7%;
+  }
+ #singlebutton {
+    box-shadow: 0 16px 24px 2px rgba(0, 0, 0, .14), 0 6px 30px 5px rgba(0, 0, 0, .12), 0 8px 10px -5px rgba(0, 0, 0, .2)
+}
+.container{
+    background-color: #fafafa;
+}
+
+#adminSection table {
+  width: 100%;
+}
+
+#adminSection td {
+  width: 50%;
+  vertical-align: top;
+  /*text-align: center;*/
+  padding-left: 15%;
+  padding-bottom: 5%;
+}
+
+#adminUsersList {
+  padding-bottom: 2%;
+}
+
+/*#addAdminUser {
+  padding-bottom: 10%;
+}*/

@@ -1,0 +1,107 @@
+.bodydiv {
+	border: 2px solid black;
+	margin-left: 20%;
+	margin-right: 20%;
+	text-align: center;
+}
+ table.no-border tr td, .table.no-border tr th {
+  border-width: 0;
+}
+
+.sp-title-bar {
+	background-color: white;
+	padding: 0 20px;
+	border-bottom: 2px solid black;
+}
+
+.sp-title-area {
+	display: inline-block;
+	text-align: center;
+}
+#div1{
+	width:300px; 
+	height:30px; 
+	background-color:red;
+	color: whitesmoke;
+	margin-left: 270px;
+	margin-top: 20px;
+}
+.sp-logo-area {
+	text-align: center;
+}
+
+.sp-icon {
+	display: inline-block;
+	width: 15%;
+	
+	margin-bottom: 25px;
+	/*height: 50px;
+	vertical-align: top;*/
+	/*border: 1px solid #999;*/
+}
+
+.sp-logo-title {
+	color: #111;
+	margin-top: 6px;
+	font-size: 22px;
+}
+
+.sp-logo-subtitle {
+	font-size: 13px;
+	margin-top: -13px;
+}
+
+@media screen and (max-width: 430px) {
+	.sp-logo-title {
+		font-size: 18px;
+	}
+}
+
+.sp-right-side-controls {
+	line-height: 60px;
+	text-align: right;
+	margin-top: 1%;
+}
+
+.sp-right-side-controls > div {
+	text-align: right;
+}
+
+@media screen and (min-width: 768px) {
+	.sp-right-side-controls > div {
+		text-align: right;
+	}
+	.sp-logo-area {
+		text-align: left;
+	}
+	.sp-logo-subtitle {
+		text-align: left;
+	}
+}
+
+.sp-collapsed-menu {
+	display: inline-block;
+	height: 100%
+}
+
+.sp-nav-button {
+	height: 40px;
+	width: 60px;
+	margin-top: 10px;
+	border: 1px solid #888;
+	padding: 0;
+	font-size: 26px;
+	color: #777;
+}
+
+.sp-view {
+	margin-left: 200px;
+	padding: 20px;
+	background-color: #ccc;
+	min-height: 100vh;
+	overflow: auto;
+}
+
+.sp-view-full-width {
+	margin-left: 0;
+}
