@@ -19,7 +19,14 @@ html
     script(src='http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js')
     script(src='http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js')
     // google signin
-    meta(name='google-signin-client_id', content='437351084896-43njc43h9o8rpmgasood068o3ns69aib.apps.googleusercontent.com')
+    //localhost:3000:
+    //meta(name='google-signin-client_id', content='437351084896-43njc43h9o8rpmgasood068o3ns69aib.apps.googleusercontent.com')
+    //localhost:8081:
+    //meta(name='google-signin-client_id', content='169338173530-0918jbgquhbqu7v9i3dv4qcf3v92e9ta.apps.googleusercontent.com')
+    //http://empappforawsbs.ap-southeast-2.elasticbeanstalk.com:
+    // meta(name='google-signin-client_id', content='352976347687-hi728b7nnqim422i63a7rgu4d4acadph.apps.googleusercontent.com')
+    //http://empappforawsbs1-env.ap-southeast-2.elasticbeanstalk.com/
+    meta(name='google-signin-client_id', content='352976347687-bimjv9tirmhher13870emh952bb0dt2k.apps.googleusercontent.com')
     script(src='https://apis.google.com/js/platform.js', async='', defer='')
     script(type='text/javascript', src='/javascripts/index.js')
     style(type='text/css').
@@ -57,6 +64,7 @@ html
                   button#signin.g-signin2(data-onsuccess='onSignIn', style='margin-left:320px;font-size: 5px;')
                 // signin error
                 // <center>
+                br
                 #error.error
     // banner of landing page
     .maindiv
@@ -132,12 +140,14 @@ html
                         br
                         button.btn(style='margin-top:5px;', onclick='addAdminUser()') Add Admin User
                         span#newAdmin_success_msg(style='color: red;')
-        // For Admins - DB Configs
+        // For Admins - DB Config
         #adminDBConfig
           .card(style='width:800px; height:auto;')
             .card-body
-              h3 DB Configs
+              h3 DB Config
               #addDBConfig
+              button.btn(style='margin-top:7px;margin-right:5px;margin-bottom:25px;', onclick='getDBConfig()') Download config to make changes
+              button.btn(style='margin-top:7px;margin-left:5px;margin-bottom:25px;', onclick='UpdateDBConfig()') Upload config file
         // For All - Generate a Report
         .card(style='width:800px; height:auto;')
           .card-body

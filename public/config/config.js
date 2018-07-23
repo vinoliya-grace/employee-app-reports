@@ -1,21 +1,17 @@
-module.exports = {
-	//MySql variables - local db
-	// mysql_host: 'localhost',
-	// mysql_user: 'root',
-	// mysql_password: 'password',
-	// mysql_database: 'mob_emp_app_dev_sql',
-	// mysql_charset : 'utf8mb4'
-	mysql_host: '127.0.0.1',
+ module.exports = {
+	/*//MySql variables - local db
+	mysql_host: 'localhost',
 	mysql_user: 'root',
 	mysql_password: 'root123',
 	mysql_database: 'empapp',
-	mysql_charset : 'utf8mb4',
+	mysql_charset : 'utf8mb4',*/
 
-	/*//MySQL variables - prod db
-	mysql_host: "",
-	mysql_user: "",
-	mysql_password: "",
-	mysql_database: "",*/
+	//MySQL variables - prod db
+	mysql_host: "testempapp.cz8gsnhkheaj.ap-southeast-2.rds.amazonaws.com",
+	mysql_user: "empapproot",
+	mysql_password: "empapproot123",
+	mysql_database: "empapp",
+	mysql_charset : 'utf8mb4',
 
 	//RedShift variables - dev
 	/*rs_user: 'eng_ro',

@@ -44,3 +44,33 @@
       text-align: left;
       padding-left: 0.3em;
     }
+    #recentreportsadmin table{
+        width:100%; 
+        border-collapse:collapse; 
+        margin-top: 3%;
+        margin-bottom: 3%;
+    }
+    #recentreportsadmin table td{ 
+        padding:5px; border:#BFBCBA 1px solid;
+    }
+    /* provide some minimal visual accomodation for IE8 and below */
+    #recentreportsadmin table tr{
+        background: #b8d1f3;
+    }
+    /*  Define the background color for all the ODD background rows  */
+    #recentreportsadmin table tr:nth-child(odd){ 
+        /*background: #DAD7D6;*/
+        background: #e6e6e6;
+    }
+    /*  Define the background color for all the EVEN background rows  */
+    #recentreportsadmin table tr:nth-child(even){
+        /*background: #E8E5E4;*/
+        background: #ffffff;
+    }
+    #recentreportsadmin table th {
+      border: 1px solid #828282;
+      background-color: #bcbcbc;
+      font-weight: bold;
+      text-align: left;
+      padding-left: 0.3em;
+    }

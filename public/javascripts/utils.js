@@ -41,6 +41,9 @@ var appinstalls7daysArr = [];
  var saved7daysArrAvg = [];
  var saved30daysArrAvg = [];
 
+ var Users7daysArrAvg = [];
+ var Users30daysArrAvg = [];
+
 
 var mysql = require('mysql');
 var con = mysql.createConnection({
@@ -50,7 +53,25 @@ var con = mysql.createConnection({
       database: config.mysql_database,
       charset : config.mysql_charset
     });
-con.connect();
+//con.connect();
+
+function roundTo(n, digits) {
+    var negative = false;
+    if (digits === undefined) {
+        digits = 0;
+    }
+        if( n < 0) {
+        negative = true;
+      n = n * -1;
+    }
+    var multiplicator = Math.pow(10, digits);
+    n = parseFloat((n * multiplicator).toFixed(11));
+    n = (Math.round(n) / multiplicator).toFixed(2);
+    if( negative ) {    
+        n = (n * -1).toFixed(2);
+    }
+    return n;
+}
 
 module.exports = {
   topDocsSetup: function(metrics, duration) {
@@ -78,125 +99,135 @@ module.exports = {
         // start_date = '2018-6-26';
         // end_date = '2018-07-03';
         var finalArr = [];
-        con.query("select document_id, document_title, document_url,channel_name as channel,count(document_id) as view_count from "+config.mysql_database+".view_document_sql where DATE(received_at)>? and DATE(received_at)<=? group by document_id, document_title, document_url order by view_count desc limit 11",[start_date,end_date], function (err, results, fields) 
-        {
-          if (err) {
-            console.log("error occurred" + err);
-            resolve("Error Occurred during Top Documents " + duration + " capture! ");
-          }
-          else
-          {     
-            console.log("got some results");
-            console.log(results);
-            var viewsCountArr;
-            var sharesCountArr;
-            var commentsCountArr;
-            var savesCountArr;
-
-            viewsCountArr = results;
-
-            //var topDocsArr = [];
-            var topDocIds = '';
-            for(var key in results) 
-            {
-              var row = results[key];
-              if (row.document_url != 'null') {
-                topDocIds = topDocIds + "'" + row.document_id + "',";
-              }
+        con.connect(function (err) {
+          con.query("Set sql_mode=('STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION')",  function (err, results, fields) 
+          {
+            if (err) {
+              console.log("Error when setting sql_mode");
+            } else {
+              console.log("Successfully set sql_mode");
             }
-            console.log(topDocIds);
-            var aaa = topDocIds.substring(0, (topDocIds.length)-1);
-
-            var sharesArr = [];
-            var commentsArr = [];
-
-            con.query("select document_id, count(document_id) as share_count from "+config.mysql_database+".share_document_sql where document_id in ("+aaa+") and DATE(received_at)>? and DATE(received_at)<=? group by document_id",[start_date,end_date], function (err, resultsShares, fields) 
+            con.query("select document_id, document_title, document_url,channel_name as channel,count(document_id) as view_count from "+config.mysql_database+".view_document_sql where DATE(received_at)>? and DATE(received_at)<=? group by document_id, document_title, document_url order by view_count desc limit 11",[start_date,end_date], function (err, results, fields) 
             {
               if (err) {
                 console.log("error occurred" + err);
-                //resolve("Error Occurred during App Install " + duration + " capture! ");
-              } else {
-                 console.log("done done");
-                
-                sharesCountArr = resultsShares;
+                resolve("Error Occurred during Top Documents " + duration + " capture! ");
+              }
+              else
+              {     
+                console.log("got some results");
+                console.log(results);
+                var viewsCountArr;
+                var sharesCountArr;
+                var commentsCountArr;
+                var savesCountArr;
 
-                con.query("select document_id, count(document_id) as comment_count from "+config.mysql_database+".comment_on_document_sql where document_id in ("+aaa+") and DATE(received_at)>? and DATE(received_at)<=? group by document_id",[start_date,end_date], function (err, resultsComments, fields) 
+                viewsCountArr = results;
+
+                //var topDocsArr = [];
+                var topDocIds = '';
+                for(var key in results) 
+                {
+                  var row = results[key];
+                  if (row.document_url != 'null') {
+                    topDocIds = topDocIds + "'" + row.document_id + "',";
+                  }
+                }
+                console.log(topDocIds);
+                var aaa = topDocIds.substring(0, (topDocIds.length)-1);
+
+                var sharesArr = [];
+                var commentsArr = [];
+
+                con.query("select document_id, count(document_id) as share_count from "+config.mysql_database+".share_document_sql where document_id in ("+aaa+") and DATE(received_at)>? and DATE(received_at)<=? group by document_id",[start_date,end_date], function (err, resultsShares, fields) 
                 {
                   if (err) {
                     console.log("error occurred" + err);
                     //resolve("Error Occurred during App Install " + duration + " capture! ");
                   } else {
+                     console.log("done done");
                     
-                    commentsCountArr = resultsComments;
+                    sharesCountArr = resultsShares;
 
-                    con.query("select document_id, count(document_id) as save_count from "+config.mysql_database+".saved_document_sql where document_id in ("+aaa+") and DATE(received_at)>? and DATE(received_at)<=? group by document_id",[start_date,end_date], function (err, resultsSaves, fields) 
+                    con.query("select document_id, count(document_id) as comment_count from "+config.mysql_database+".comment_on_document_sql where document_id in ("+aaa+") and DATE(received_at)>? and DATE(received_at)<=? group by document_id",[start_date,end_date], function (err, resultsComments, fields) 
                     {
                       if (err) {
                         console.log("error occurred" + err);
                         //resolve("Error Occurred during App Install " + duration + " capture! ");
                       } else {
-                        savesCountArr = resultsSaves;
+                        
+                        commentsCountArr = resultsComments;
 
-                        // console.log(viewsCountArr);
-                        // console.log(sharesCountArr);
-                        // console.log(commentsCountArr);
-                        // console.log(savesCountArr);
+                        con.query("select document_id, count(document_id) as save_count from "+config.mysql_database+".saved_document_sql where document_id in ("+aaa+") and DATE(received_at)>? and DATE(received_at)<=? group by document_id",[start_date,end_date], function (err, resultsSaves, fields) 
+                        {
+                          if (err) {
+                            console.log("error occurred" + err);
+                            //resolve("Error Occurred during App Install " + duration + " capture! ");
+                          } else {
+                            savesCountArr = resultsSaves;
 
-                        for (key in viewsCountArr) {
-                          
-                          //console.log(viewsCountArr[key]);
-                          var viewsRow = viewsCountArr[key];
-                          if (viewsRow.document_id != 'null') {
-                            var docId = viewsRow.document_id;
-                            var docTitle = viewsRow.document_title;
-                            var docUrl = viewsRow.document_url;
-                            var docChannel = viewsRow.channel;
-                            var viewsCount = viewsRow.view_count;
-                            var sharesCount = 0; var commentsCount = 0; var savesCount = 0;
+                            // console.log(viewsCountArr);
+                            // console.log(sharesCountArr);
+                            // console.log(commentsCountArr);
+                            // console.log(savesCountArr);
 
-                            for(key in sharesCountArr) {
-                              var sharesRow = sharesCountArr[key];
-                              if (sharesRow.document_id == docId) {
-                                sharesCount = sharesRow.share_count;
+                            for (key in viewsCountArr) {
+                              
+                              //console.log(viewsCountArr[key]);
+                              var viewsRow = viewsCountArr[key];
+                              if (viewsRow.document_id != 'null') {
+                                var docId = viewsRow.document_id;
+                                var docTitle = viewsRow.document_title;
+                                var docUrl = viewsRow.document_url;
+                                var docChannel = viewsRow.channel;
+                                var viewsCount = viewsRow.view_count;
+                                var sharesCount = 0; var commentsCount = 0; var savesCount = 0;
+
+                                for(key in sharesCountArr) {
+                                  var sharesRow = sharesCountArr[key];
+                                  if (sharesRow.document_id == docId) {
+                                    sharesCount = sharesRow.share_count;
+                                  }
+                                }
+
+                                for(key in commentsCountArr) {
+                                  var commentsRow = commentsCountArr[key];
+                                  if (commentsRow.document_id == docId) {
+                                    commentsCount = commentsRow.comment_count;
+                                  }
+                                }
+
+                                for(key in savesCountArr) {
+                                  var savesRow = savesCountArr[key];
+                                  if (savesRow.document_id == docId) {
+                                    savesCount = savesRow.save_count;
+                                  }
+                                }
+                                
+                                var obj = {title:docTitle,url:docUrl,channel:docChannel,opens:viewsCount,shares:sharesCount,comments:commentsCount,saves:savesCount};
+                                finalArr.push(obj);
                               }
                             }
 
-                            for(key in commentsCountArr) {
-                              var commentsRow = commentsCountArr[key];
-                              if (commentsRow.document_id == docId) {
-                                commentsCount = commentsRow.comment_count;
-                              }
-                            }
+                            console.log("finally:");
+                            console.log(finalArr);
 
-                            for(key in savesCountArr) {
-                              var savesRow = savesCountArr[key];
-                              if (savesRow.document_id == docId) {
-                                savesCount = savesRow.save_count;
-                              }
-                            }
-                            
-                            var obj = {title:docTitle,url:docUrl,channel:docChannel,opens:viewsCount,shares:sharesCount,comments:commentsCount,saves:savesCount};
-                            finalArr.push(obj);
+                            if (duration == "7days") topDocs7daysArr = finalArr;
+                            if (duration == "30days") topDocs30daysArr = finalArr;
+                            //console.log(appInstallsArr);
+                            console.log("done with getting data from db, going to resolve arr topDocs");
+                            resolve("Top Documents " + duration + " Data Collected! ");
+
                           }
-                        }
-
-                        console.log("finally:");
-                        console.log(finalArr);
-
-                        if (duration == "7days") topDocs7daysArr = finalArr;
-                        if (duration == "30days") topDocs30daysArr = finalArr;
-                        //console.log(appInstallsArr);
-                        console.log("done with getting data from db, going to resolve arr topDocs");
-                        resolve("Top Documents " + duration + " Data Collected! ");
+                        });
 
                       }
                     });
-
                   }
-                });
+                });           
               }
-            });           
-          }
+            });
+          });
         });
       } 
       else 
@@ -398,10 +429,10 @@ module.exports = {
       }*/
 
       if (metrics.topUsers7 == false) {
-      template.deleteSheet('Top Performing Users - 7 Days');
+      template.deleteSheet('Top Users - 7 Days');
       }
       if (metrics.topUsers30 == false) {
-      template.deleteSheet('Top Performing Users - 30 Days');
+      template.deleteSheet('Top Users - 30 Days');
       }
       /*if (metrics.topUsers6 == false) {
       template.deleteSheet('Top Users - 6 Months');
@@ -416,34 +447,138 @@ module.exports = {
       }
       });
       
-    },
+  },
+  getAllCompanies: function() {
+    console.log("inside getAllCompanies");
+
+    return new Promise(function(resolve, reject) 
+    {
+      con.connect(function (err) {
+        con.query("select * from "+config.mysql_database+".company_details",  function (err, results, fields) 
+        {
+          console.log("done with query");
+          if (err) {
+            console.log("error occurred" + err);
+            //con.end();
+            resolve("Error Occurred during getAllCompanies capture! ");
+          } else {
+            console.log("got some results without error");
+            console.log(results);
+            if (results.length > 0) {
+              var outputArr = [];
+              for(var key in results) 
+              {
+                  var row = results[key];
+                  console.log(row);
+                  var abc = { id : row.company_id, name : row.company_name};
+
+                  outputArr.push(abc);
+              }
+              console.log("returning companies array");
+              //con.end();
+              resolve(outputArr);
+            } else {
+              console.log("No companies available");
+              //con.end();
+              resolve("No companies found!");
+            }
+          }
+        });
+        //con.end();
+      });
+
+    });
+  },
+  addNewCompany: function(company_id, company_name) {
+    console.log("inside addNewCompany");
+
+    return new Promise(function(resolve, reject) 
+    {
+      con.connect(function (err) {
+        con.query("Insert into "+config.mysql_database+".company_details(company_id,company_name)VALUES ('" + company_id + "', '" + company_name + "')",  function (err, results, fields) 
+        {
+          console.log("done with query");
+          if (err) {
+            console.log("error occurred" + err);
+            resolve("Error Occurred during addNewCompany capture! ");
+          } else {
+            console.log("got some results without error");
+            console.log(results);
+            console.log(fields);
+            console.log(results.affectedRows);
+            if (results != undefined && parseInt(results.affectedRows)>0) {
+              console.log("added new company");
+              resolve("success");
+            } else {
+              console.log("No company added");
+              resolve("No company added!");
+            }
+          }
+        });
+        //con.end();
+      });
+
+    });
+  },
+  deleteCompany: function(company_name) {
+    console.log("inside deleteCompany");
+
+    return new Promise(function(resolve, reject) 
+    {
+      con.connect(function (err) {
+        con.query("DELETE FROM "+config.mysql_database+".company_details where company_name=?", [company_name], function (err, results, fields) 
+        {
+          console.log("done with query");
+          if (err) {
+            console.log("error occurred" + err);
+            resolve("Error Occurred during deleteCompany capture! ");
+          } else {
+            console.log("got some results without error");
+            console.log(results);
+            if (results != undefined && parseInt(results.affectedRows)>0) {
+              console.log("deleted company");
+              resolve("success");
+            } else {
+              console.log("No company deleted");
+              resolve("No company deleted!");
+            }
+          }
+        });
+        //con.end();
+      });
+
+    });
+  },
   getAllAdminUsers: function(userId) {
     console.log("inside getAllAdminUsers");
 
     return new Promise(function(resolve, reject) 
     {
-      con.query("select id, email from "+config.mysql_database+".emp_app_admins",  function (err, results, fields) 
-      {
-        console.log("done with query");
-        if (err) {
-          console.log("error occurred" + err);
-          resolve("Error Occurred during getAllAdminUsers capture! ");
-        } else {
-          console.log("got some results without error");
-          console.log(results);
-          if (results.length > 0) {
-            var adminUsersArr = [];
-            for (key in results) {
-              var row = results[key];
-              adminUsersArr.push(row);
-            }
-            console.log("returning admin users array");
-            resolve(adminUsersArr);
+      con.connect(function (err) {
+        con.query("select id, email from "+config.mysql_database+".emp_app_admins",  function (err, results, fields) 
+        {
+          console.log("done with query");
+          if (err) {
+            console.log("error occurred" + err);
+            resolve("Error Occurred during getAllAdminUsers capture! ");
           } else {
-            console.log("No admin users available");
-            resolve("No admin users found!");
+            console.log("got some results without error");
+            console.log(results);
+            if (results.length > 0) {
+              var adminUsersArr = [];
+              for (key in results) {
+                var row = results[key];
+                adminUsersArr.push(row);
+              }
+              console.log("returning admin users array");
+              resolve(adminUsersArr);
+            } else {
+              console.log("No admin users available");
+              resolve("No admin users found!");
+            }
           }
-        }
+        });
+        //con.end();
       });
 
     });
@@ -455,27 +590,87 @@ module.exports = {
     {
       //var email = userId + "@meltwater.com";
       console.log("inside promise = " + userId);
-      con.query("select id, email from "+config.mysql_database+".emp_app_admins where email='" + userId + "'",  function (err, results, fields) 
-      {
-        console.log("done with query");
-        if (err) {
-          console.log("error occurred" + err);
-          resolve("Error Occurred during Top Documents " + duration + " capture! ");
-        } else {
-          console.log("got some results without error");
-          console.log(results);
-          if (results.length <=0) {
-            console.log("empty, not an admin user");
-            resolve("false");
+      con.connect(function (err) {
+        con.query("select id, email from "+config.mysql_database+".emp_app_admins where email='" + userId + "'",  function (err, results, fields) 
+        {
+          console.log("done with query");
+          if (err) {
+            console.log("error occurred" + err);
+            resolve("Error Occurred during checkIfAdminUser capture! ");
           } else {
-            console.log("not empty, is an admin user");
-            resolve("true");
+            console.log("got some results without error");
+            console.log(results);
+            if (results.length <=0) {
+              console.log("empty, not an admin user");
+              resolve("false");
+            } else {
+              console.log("not empty, is an admin user");
+              resolve("true");
+            }
           }
-        }
+        });
+        //con.end();
+      });
+    });
+
+  },
+  addAdminUser: function(email) {
+    console.log("inside addAdminUser");
+
+    return new Promise(function(resolve, reject) 
+    {
+      con.connect(function (err) {
+        con.query("Insert into "+config.mysql_database+".emp_app_admins(email)VALUES ('" + email + "')",  function (err, results, fields) 
+        {
+          console.log("done with query");
+          if (err) {
+            console.log("error occurred" + err);
+            resolve("Error Occurred during addAdminUser capture! ");
+          } else {
+            console.log("got some results without error");
+            console.log(results);
+            if (results != undefined && parseInt(results.affectedRows)>0) {
+              console.log("added new admin user");
+              resolve("success");
+            } else {
+              console.log("No admin user added");
+              resolve("No admin user added!");
+            }
+          }
+        });
+        //con.end();
       });
 
     });
+  },
+  deleteAdminUser: function(email) {
+    console.log("inside deleteAdminUser");
 
+    return new Promise(function(resolve, reject) 
+    {
+      con.connect(function (err) {
+        con.query("DELETE FROM "+config.mysql_database+".emp_app_admins where email=?", [email], function (err, results, fields) 
+        {
+          console.log("done with query");
+          if (err) {
+            console.log("error occurred" + err);
+            resolve("Error Occurred during deleteAdminUser capture! ");
+          } else {
+            console.log("got some results without error");
+            console.log(results);
+            if (results != undefined && parseInt(results.affectedRows)>0) {
+              console.log("deleted admin user");
+              resolve("success");
+            } else {
+              console.log("No admin user deleted");
+              resolve("No admin user deleted!");
+            }
+          }
+        });
+        //con.end();
+      });
+
+    });
   },
   appInstallsSetup: function(metrics, duration) {
     console.log("inside appInstallsSetup");
@@ -498,48 +693,51 @@ module.exports = {
 
         console.log(start_date);
         console.log(end_date);
-        con.query("SELECT DATE(received_at) as Date, SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios, SUM(case when context_device_type = 'android' then 1 else 0 end) as android FROM " + config.mysql_database + ".application_installed_sql t1 inner JOIN " + config.mysql_database + ".company_details t2 where t2.company_name = ? and DATE(received_at)>? and DATE(received_at) <=? GROUP BY DATE(received_at)",[metrics.companyName,start_date,end_date], function (err, results, fields) 
-        {
-          if (err) {
-            console.log("error occurred" + err);
-            resolve("Error Occurred during App Install " + duration + " capture! ");
-          }
-          else
-          {      
-        //iterate through all the dates from start date to end date
-        //for date, make sure we get the right format
-            var appInstallsArr = [];
-            var endDate = new Date(end_date);
-            for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
-            {
-              var obj;
-              var boolSetFromDB = 0;
-              var dateDataPoint = new Date(d);
-        //console.log(dateDataPoint);
-              console.log("results:");
-              console.log(results);
-              for(var key in results) 
-              {
-                var row = results[key];
-                //console.log(row.Date);
-                if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
-                  obj = {day:row.Date,ios:row.ios,android:row.android};
-                  boolSetFromDB = 1;
-                  break;
-                }
-              }
-              if (boolSetFromDB == 0) {
-                obj = {day:dateDataPoint,ios:0,android:0};
-              }
-              appInstallsArr.push(obj);
-              
+        con.connect(function (err) {
+          con.query("SELECT DATE(received_at) as Date, SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios, SUM(case when context_device_type = 'android' then 1 else 0 end) as android,SUM(case when context_device_type = 'ios' then 1 else 0 end + case when context_device_type = 'android' then 1 else 0 end) as total FROM " + config.mysql_database + ".application_installed_sql t1 inner JOIN " + config.mysql_database + ".company_details t2 where t2.company_id = ? and DATE(received_at)>? and DATE(received_at) <=? GROUP BY DATE(received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+          {
+            if (err) {
+              console.log("error occurred" + err);
+              resolve("Error Occurred during App Install " + duration + " capture! ");
             }
-            if (duration == "7days") appinstalls7daysArr = appInstallsArr;
-            if (duration == "30days") appinstalls30daysArr = appInstallsArr;
-            console.log(appInstallsArr);
-            console.log("done with getting data from db, going to resolve arr appInstalls");
-            resolve("App Installs " + duration + " Data Collected! ");
-          }
+            else
+            {      
+              //iterate through all the dates from start date to end date
+              //for date, make sure we get the right format
+              var appInstallsArr = [];
+              var endDate = new Date(end_date);
+              for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
+              {
+                
+                var obj;
+                var boolSetFromDB = 0;
+                var dateDataPoint = new Date(d);
+                //console.log(dateDataPoint);
+                //console.log("results:");
+                //console.log(results);
+                for(var key in results) 
+                {
+                  var row = results[key];
+                  //console.log(row.Date);
+                  if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
+                    obj = {day:row.Date,ios:row.ios,android:row.android,total:row.total};
+                    boolSetFromDB = 1;
+                    break;
+                  }
+                }
+                if (boolSetFromDB == 0) {
+                  obj = {day:dateDataPoint,ios:0,android:0,total:0};
+                }
+                appInstallsArr.push(obj);
+                
+              }
+              if (duration == "7days") appinstalls7daysArr = appInstallsArr;
+              if (duration == "30days") appinstalls30daysArr = appInstallsArr;
+              console.log(appInstallsArr);
+              console.log("Done with getting data from db, going to resolve arr appInstalls");
+              resolve("App Installs " + duration + " Data Collected! ");
+            }
+          });
         });
       } 
       else 
@@ -568,45 +766,47 @@ module.exports = {
 
         console.log(start_date);
         console.log(end_date);
-        con.query("SELECT DATE(t1.received_at) AS Date,SUM(case when t1.context_device_type = 'ios' then 1 else 0 end) as ios,SUM(case when t1.context_device_type = 'android' then 1 else 0 end) as android FROM " + config.mysql_database + ".foreground_sql t1 INNER JOIN " + config.mysql_database + ".company_details t2 ON t1.context_traits_company_id = t2.company_id WHERE t2.company_name = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY DATE(t1.received_at)",[metrics.companyName,start_date,end_date], function (err, results, fields) 
-        {
-          if (err) {
-          console.log("error occurred" + err);
-          resolve("Error Occurred during Active Users " + duration + " capture! ");
-          }
-          else
-          {      
-          //iterate through all the dates from start date to end date
-          //for date, make sure we get the right format
-            var activeUsersArr = [];
-            var endDate = new Date(end_date);
-            for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
-            {
-              var obj;
-              var boolSetFromDB = 0;
-              var dateDataPoint = new Date(d);
-            //console.log(dateDataPoint);
-              for(var key in results) 
+        con.connect(function (err) {
+          con.query("SELECT DATE(received_at) as Date, SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios, SUM(case when context_device_type = 'android' then 1 else 0 end) as android,SUM(case when context_device_type = 'ios' then 1 else 0 end + case when context_device_type = 'android' then 1 else 0 end) as total from " + config.mysql_database + ".users_sql WHERE context_traits_company_id = ? AND DATE(received_at)>? and DATE(received_at)<=? GROUP BY DATE(received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+          {
+            if (err) {
+            console.log("error occurred" + err);
+            resolve("Error Occurred during Active Users " + duration + " capture! ");
+            }
+            else
+            {      
+              //iterate through all the dates from start date to end date
+              //for date, make sure we get the right format
+              var activeUsersArr = [];
+              var endDate = new Date(end_date);
+              for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
               {
-                var row = results[key];
-                //console.log(row.Date);
-                if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
-                  obj = {day:row.Date,ios:row.ios,android:row.android};
-                  boolSetFromDB = 1;
-                  break;
+                var obj;
+                var boolSetFromDB = 0;
+                var dateDataPoint = new Date(d);
+                //console.log(dateDataPoint);
+                for(var key in results) 
+                {
+                  var row = results[key];
+                  //console.log(row.Date);
+                  if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
+                    obj = {day:row.Date,ios:row.ios,android:row.android,total:row.total};
+                    boolSetFromDB = 1;
+                    break;
+                  }
                 }
+                if (boolSetFromDB == 0) {
+                  obj = {day:dateDataPoint,ios:0,android:0,total:0};
+                }
+                activeUsersArr.push(obj);
               }
-              if (boolSetFromDB == 0) {
-                obj = {day:dateDataPoint,ios:0,android:0};
-              }
-              activeUsersArr.push(obj);
               if (duration == "7days") {activeUsers7daysArr = activeUsersArr; console.log("set 7 days arr of activeusers7");}
               if (duration == "30days"){activeUsers30daysArr = activeUsersArr; console.log("set 30 days arr of activeusers30");}
-
-              console.log("done with getting data from db, going to resolve arr active users");
-              resolve("Active users" + duration + " Data Collected! ");
+              console.log(activeUsersArr);
+              console.log("Done with getting data from db, going to resolve arr active users");
+              resolve("Active Users " + duration + " Data Collected! ");
             }
-          }
+          });
         });
       } else 
       {
@@ -615,11 +815,9 @@ module.exports = {
     });
   },
   appSessionsSetup: function(metrics, duration) {
-   /*console.log("inside appSessionsSetup");*/
-
+    console.log("inside appSessionsSetup");
     return new Promise(function(resolve, reject) 
     {
-    /* metrics.activeUsers = true;*/
       if (metrics.appSessions == true) 
       {
         if (duration == "7days" && metrics.appSessions7 == true) {
@@ -631,85 +829,121 @@ module.exports = {
         start_date = metrics.month_back_date;
         end_date = metrics.end_date;
         }
-
-        /*console.log(start_date);
-        console.log(end_date);*/
-        con.query("SELECT DATE(t1.received_at) AS Date,SUM(case when t1.context_device_type = 'ios' then 1 else 0 end) as ios, SUM(case when t1.context_device_type = 'android' then 1 else 0 end) as android FROM " + config.mysql_database + ".foreground_sql t1 inner JOIN " + config.mysql_database + ".company_details t2 on t1.context_traits_company_id = t2.company_id where t2.company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY DATE(t1.received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
-        {
-          if (err) {
-          /*console.log("error occurred" + err);*/
-          resolve("Error Occurred during App Sessions" + duration + " capture! ");
-          }
-          else
-          {      
-            var appSessionArr = [];
-            var endDate = new Date(end_date);
-            for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
-            {
-              var obj;
-              var boolSetFromDB = 0;
-              var dateDataPoint = new Date(d);
-            //console.log(dateDataPoint);
-              for(var key in results) 
-              {
-                var row = results[key];
-                //console.log(row.Date);
-                if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
-                  obj = {day:row.Date,ios:row.ios,android:row.android};
-                  boolSetFromDB = 1;
-                  break;
-                }
-              }
-              if (boolSetFromDB == 0) {
-                obj = {day:dateDataPoint,ios:0,android:0};
-              }
-              appSessionArr.push(obj);
-             
+        con.connect(function (err) {
+          //Query for App Session
+          con.query("SELECT DATE(t1.received_at) AS Date,SUM(case when t1.context_device_type = 'ios' then 1 else 0 end) as ios, SUM(case when t1.context_device_type = 'android' then 1 else 0 end) as android,SUM(case when context_device_type = 'ios' then 1 else 0 end + case when context_device_type = 'android' then 1 else 0 end) as total FROM " + config.mysql_database + ".foreground_sql t1 inner JOIN " + config.mysql_database + ".company_details t2 on t1.context_traits_company_id = t2.company_id where t2.company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY DATE(t1.received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+          {
+            if (err) {
+            resolve("Error Occurred during App Sessions" + duration + " capture! ");
             }
-            if (duration == "7days") {appsession7daysArr = appSessionArr; console.log(appsession7daysArr);}
-            if (duration == "30days"){appsession30daysArr = appSessionArr; console.log(appsession30daysArr);}
-
-            /*console.log("done with getting data from db, going to resolve arr");*/
-            /*resolve("App Sessions" + duration + " Data Collected! ");*/
-          }
-        });
-        con.query("select DATE(received_at) as Date,(ioss+ios)/2 as avgios,(androids+android)/2 as avgandroid from (select distinct t1.received_at,SUM(case when context_device_type = 'ios' then 1 else 0 end) as ioss, SUM(case when context_device_type = 'android' then 1 else 0 end) as androids from " + config.mysql_database + ".foreground_sql t1 WHERE DATE(t1.received_at)>? and DATE(t1.received_at)<=? and t1.context_traits_company_id = ? GROUP BY DATE(t1.received_at))A cross join (select SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios,SUM(case when context_device_type = 'android' then 1 else 0 end) as android from " + config.mysql_database + ".users_sql t2 WHERE DATE(t2.received_at)>? and DATE(t2.received_at)<=? and t2.context_traits_company_id = ? GROUP BY DATE(t2.received_at))B group by A.received_at",[start_date,end_date,metrics.companyId,start_date,end_date,metrics.companyId], function (err, results, fields) 
-        {
-          if (err) {
-          /*console.log("error occurred" + err);*/
-          resolve("Error Occurred during Sessions" + duration + " capture! ");
-          }
-          else
-          {      
-            var appSessionArrAvg = [];
-            var endDate = new Date(end_date);
-            for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
-            {
-              var obj;
-              var boolSetFromDB = 0;
-              var dateDataPoint = new Date(d);
-            //console.log(dateDataPoint);
-              for(var key in results) 
+            else
+            {      
+              var appSessionArr = [];
+              var endDate = new Date(end_date);
+              for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
               {
-                var row = results[key];
-                //console.log(row.Date);
-                if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
-                  obj = {day:row.Date,ios:row.avgios,android:row.avgandroid};
-                  boolSetFromDB = 1;
-                  break;
+                var obj;
+                var boolSetFromDB = 0;
+                var dateDataPoint = new Date(d);
+                //console.log(dateDataPoint);
+                for(var key in results) 
+                {
+                  var row = results[key];
+                  //console.log(row.Date);
+                  if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
+                    obj = {day:row.Date,ios:row.ios,android:row.android,total:row.total};
+                    boolSetFromDB = 1;
+                    break;
+                  }
                 }
+                if (boolSetFromDB == 0) {
+                  obj = {day:dateDataPoint,ios:0,android:0,total:0};
+                }
+                appSessionArr.push(obj);
+               
               }
-              if (boolSetFromDB == 0) {
-                obj = {day:dateDataPoint,ios:0,android:0};
-              }
-              appSessionArrAvg.push(obj);
-              if (duration == "7days") {appsession7daysArrAvg = appSessionArrAvg; console.log("set 7 days arr of app session7avg");}
-              if (duration == "30days"){appsession30daysArrAvg = appSessionArrAvg; console.log("set 30 days arr of appsession30avg");}
+              if (duration == "7days") {appsession7daysArr = appSessionArr; console.log(appsession7daysArr);}
+              if (duration == "30days"){appsession30daysArr = appSessionArr; console.log(appsession30daysArr);}
+              console.log("Done with getting data from db, moving on to avg now, get active users first");
+              //Query for Active Users
+              con.query("SELECT DATE(received_at) as Date, SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios, SUM(case when context_device_type = 'android' then 1 else 0 end) as android,SUM(case when context_device_type = 'ios' then 1 else 0 end + case when context_device_type = 'android' then 1 else 0 end) as total from " + config.mysql_database + ".users_sql WHERE context_traits_company_id = ? AND DATE(received_at)>? and DATE(received_at)<=? GROUP BY DATE(received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+              {
+                if (err) {
+                console.log("error occurred" + err);
+                resolve("Error Occurred during Active Users Avg " + duration + " capture! ");
+                }
+                else
+                { 
+                  var activeUsersArrForAv = []
+                  var endDate = new Date(end_date);
+                  for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
+                  {
+                    var obj;
+                    var boolSetFromDB = 0;
+                    var dateDataPoint = new Date(d);
+                    for(var key in results) 
+                    {
+                      var row = results[key];
+                      if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
+                        obj = {day:row.Date,ios:row.ios,android:row.android,total:row.total};
+                        boolSetFromDB = 1;
+                        break;
+                      }
+                    }
+                    if (boolSetFromDB == 0) {
+                      obj = {day:dateDataPoint,ios:0,android:0,total:0};
+                    }
+                    activeUsersArrForAv.push(obj);
+                    //console.log("the object for activeUsersArrForAv");
+                    //console.log(activeUsersArrForAv);
+                  }
+                  
+                  var objAvg;
+                  var appSessionArrAvg = [];
+                  for(var key in activeUsersArrForAv) {
 
-              /*console.log("done with getting data from db, going to resolve arr");*/
-              resolve("App Sessions" + duration + " Data Collected! ");
+                    var iOSAvg, androidAvg, totalAvg;
+
+                    if (duration == "7days"){
+                      iOSAvg = parseFloat(appsession7daysArr[key].ios)/parseFloat(activeUsersArrForAv[key].ios);
+                      if (isNaN(iOSAvg)) iOSAvg = 0;
+                      if(iOSAvg == "Infinity") iOSAvg = 0;
+                      androidAvg = parseFloat(appsession7daysArr[key].android)/parseFloat(activeUsersArrForAv[key].android);
+                      if (isNaN(androidAvg)) androidAvg = 0;
+                      if(androidAvg == "Infinity") androidAvg = 0;
+                      totalAvg = parseInt(appsession7daysArr[key].total)/parseInt(activeUsersArrForAv[key].total);
+                      if (isNaN(totalAvg)) totalAvg = 0;
+                      if(totalAvg == "Infinity") totalAvg = 0;
+                    }
+                    
+                    if (duration == "30days"){
+                      iOSAvg = parseFloat(appsession30daysArr[key].ios)/parseFloat(activeUsersArrForAv[key].ios);
+                      if (isNaN(iOSAvg)) iOSAvg = 0;
+                      if(iOSAvg == "Infinity") iOSAvg = 0;
+                      androidAvg = parseFloat(appsession30daysArr[key].android)/parseFloat(activeUsersArrForAv[key].android);
+                      if (isNaN(androidAvg)) androidAvg = 0;
+                      if(androidAvg == "Infinity") androidAvg = 0;
+                      totalAvg = parseInt(appsession30daysArr[key].total)/parseInt(activeUsersArrForAv[key].total);
+                      if (isNaN(totalAvg)) totalAvg = 0;
+                      if(totalAvg == "Infinity") totalAvg = 0;
+                    }
+
+                    // objAvg = {day:activeUsersArrForAv[key].day,ios:iOSAvg,android:androidAvg,total:totalAvg};
+                    //objAvg = {day:activeUsersArrForAv[key].day,ios:roundTo(iOSAvg,2),android:roundTo(androidAvg,2)};
+                    objAvg = {day:activeUsersArrForAv[key].day,ios:iOSAvg,android:androidAvg,total:activeUsersArrForAv[key].total,totalAvg:totalAvg};
+                    appSessionArrAvg.push(objAvg);
+                    
+                  }
+                  if (duration == "7days") {appsession7daysArrAvg = appSessionArrAvg; console.log("set 7 days arr of app session7avg");}
+                  if (duration == "30days"){appsession30daysArrAvg = appSessionArrAvg; console.log("set 30 days arr of appsession30avg");}
+                  
+                  console.log(appSessionArrAvg);
+                  console.log("Done with getting data from db, going to resolve arr");
+                  resolve("App Sessions " + duration + " Data Collected! ");
+                }
+              });
             }
-          }
+          });
         });
       } else 
       {
@@ -718,7 +952,7 @@ module.exports = {
     });
   },
   docsReadSetup: function(metrics, duration) {
-   /*console.log("inside docsReadSetup");*/
+   console.log("inside docsReadSetup");
 
     return new Promise(function(resolve, reject) 
     {
@@ -737,81 +971,119 @@ module.exports = {
 
         /*console.log(start_date);
         console.log(end_date);*/
-        con.query("SELECT DATE(t1.received_at) AS Date, SUM(case when t1.context_device_type = 'ios' then 1 else 0 end) as ios, SUM(case when t1.context_device_type = 'android' then 1 else 0 end) as android FROM " + config.mysql_database + ".view_document_sql t1 INNER JOIN " + config.mysql_database + ".company_details t2 ON t1.context_traits_company_id = t2.company_id WHERE t2.company_id = ?  AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY DATE(t1.received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
-        {
-          if (err) {
-          /*console.log("error occurred" + err);*/
-          resolve("Error Occurred during Docs Read" + duration + " capture! ");
-          }
-          else
-          {      
-            var docsReadArr = [];
-            var endDate = new Date(end_date);
-            for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
-            {
-              var obj;
-              var boolSetFromDB = 0;
-              var dateDataPoint = new Date(d);
-            //console.log(dateDataPoint);
-              for(var key in results) 
+        con.connect(function (err) {
+          con.query("SELECT DATE(t1.received_at) AS Date, SUM(case when t1.context_device_type = 'ios' then 1 else 0 end) as ios, SUM(case when t1.context_device_type = 'android' then 1 else 0 end) as android,SUM(case when context_device_type = 'ios' then 1 else 0 end + case when context_device_type = 'android' then 1 else 0 end) as total FROM " + config.mysql_database + ".view_document_sql t1 INNER JOIN " + config.mysql_database + ".company_details t2 ON t1.context_traits_company_id = t2.company_id WHERE t2.company_id = ?  AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY DATE(t1.received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+          {
+            if (err) {
+            /*console.log("error occurred" + err);*/
+            resolve("Error Occurred during Docs Read" + duration + " capture! ");
+            }
+            else
+            {      
+              var docsReadArr = [];
+              var endDate = new Date(end_date);
+              for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
               {
-                var row = results[key];
-                //console.log(row.Date);
-                if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
-                  obj = {day:row.Date,ios:row.ios,android:row.android};
-                  boolSetFromDB = 1;
-                  break;
+                var obj;
+                var boolSetFromDB = 0;
+                var dateDataPoint = new Date(d);
+                //console.log(dateDataPoint);
+                for(var key in results) 
+                {
+                  var row = results[key];
+                  //console.log(row.Date);
+                  if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
+                    obj = {day:row.Date,ios:row.ios,android:row.android,total:row.total};
+                    boolSetFromDB = 1;
+                    break;
+                  }
                 }
+                if (boolSetFromDB == 0) {
+                  obj = {day:dateDataPoint,ios:0,android:0,total:0};
+                }
+                docsReadArr.push(obj);
               }
-              if (boolSetFromDB == 0) {
-                obj = {day:dateDataPoint,ios:0,android:0};
-              }
-              docsReadArr.push(obj);
               if (duration == "7days") {docsRead7daysArr = docsReadArr; console.log("set 7 days arr of docsread7");}
               if (duration == "30days"){docsRead30daysArr = docsReadArr; console.log("set 30 days arr of docsread30");}
 
-              console.log("done with getting data from db, going to resolve arr");
-             /* resolve("Docs Read" + duration + " Data Collected! ");*/
-            }
-          }
-        });
-        con.query("select DATE(received_at) as Date,(ioss+ios)/2 as avgios,(androids+android)/2 as avgandroid from (select distinct t1.received_at,SUM(case when context_device_type = 'ios' then 1 else 0 end) as ioss, SUM(case when context_device_type = 'android' then 1 else 0 end) as androids from " + config.mysql_database + ".view_document_sql t1 WHERE DATE(t1.received_at)>? and DATE(t1.received_at)<=? and t1.context_traits_company_id = ? GROUP BY DATE(t1.received_at))A cross join (select SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios,SUM(case when context_device_type = 'android' then 1 else 0 end) as android from " + config.mysql_database + ".users_sql t2 WHERE DATE(t2.received_at)>? and DATE(t2.received_at)<=? and t2.context_traits_company_id = ? GROUP BY DATE(t2.received_at))B group by A.received_at",[start_date,end_date,metrics.companyId,start_date,end_date,metrics.companyId], function (err, results, fields) 
-        {
-          if (err) {
-          console.log("error occurred" + err);
-          resolve("Error Occurred during Docs Read" + duration + " capture! ");
-          }
-          else
-          {      
-            var docsReadArrAvg = [];
-            var endDate = new Date(end_date);
-            for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
-            {
-              var obj;
-              var boolSetFromDB = 0;
-              var dateDataPoint = new Date(d);
-            //console.log(dateDataPoint);
-              for(var key in results) 
+              console.log(docsReadArr);
+              console.log("Done with getting data from db, moving on to avg now, get active users first");
+              //Query for active users
+              con.query("SELECT DATE(received_at) as Date, SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios, SUM(case when context_device_type = 'android' then 1 else 0 end) as android,SUM(case when context_device_type = 'ios' then 1 else 0 end + case when context_device_type = 'android' then 1 else 0 end) as total from " + config.mysql_database + ".users_sql WHERE context_traits_company_id = ? AND DATE(received_at)>? and DATE(received_at)<=? GROUP BY DATE(received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
               {
-                var row = results[key];
-                //console.log(row.Date);
-                if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
-                  obj = {day:row.Date,ios:row.avgios,android:row.avgandroid};
-                  boolSetFromDB = 1;
-                  break;
+                if (err) {
+                console.log("error occurred" + err);
+                resolve("Error Occurred during Active Users Avg " + duration + " capture! ");
                 }
-              }
-              if (boolSetFromDB == 0) {
-                obj = {day:dateDataPoint,ios:0,android:0};
-              }
-              docsReadArrAvg.push(obj);
-              if (duration == "7days") {docsRead7daysArrAvg = docsReadArrAvg; console.log("set 7 days arr of docsread7avg");}
-              if (duration == "30days"){docsRead30daysArrAvg = docsReadArrAvg; console.log("set 30 days arr of docsread30avg");}
+                else
+                { 
+                  var activeUsersArrForAv = []
+                  var endDate = new Date(end_date);
+                  for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
+                  {
+                    var obj;
+                    var boolSetFromDB = 0;
+                    var dateDataPoint = new Date(d);
+                    for(var key in results) 
+                    {
+                      var row = results[key];
+                      //console.log(row.Date);
+                      if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
+                        obj = {day:row.Date,ios:row.ios,android:row.android,total:row.total};
+                        boolSetFromDB = 1;
+                        break;
+                      }
+                    }
+                    if (boolSetFromDB == 0) {
+                      obj = {day:dateDataPoint,ios:0,android:0,total:0};
+                    }
+                    activeUsersArrForAv.push(obj);
+                  }
+                  
+                  var objAvg;
+                  var docsReadArrAvg = [];
+                  for(var key in activeUsersArrForAv) {
 
-              console.log("done with getting data from db, going to resolve arr");
-              resolve("Docs Read" + duration + " Data Collected! ");
+                    var iOSAvg, androidAvg, totalAvg;
+
+                    if (duration == "7days"){
+                      iOSAvg = parseFloat(docsRead7daysArr[key].ios)/parseFloat(activeUsersArrForAv[key].ios);
+                      if (isNaN(iOSAvg)) iOSAvg = 0;
+                      if(iOSAvg == "Infinity") iOSAvg = 0;
+                      androidAvg = parseFloat(docsRead7daysArr[key].android)/parseFloat(activeUsersArrForAv[key].android);
+                      if (isNaN(androidAvg)) androidAvg = 0;
+                      if(androidAvg == "Infinity") androidAvg = 0;
+                      totalAvg = parseInt(appsession7daysArr[key].total)/parseInt(activeUsersArrForAv[key].total);
+                      if (isNaN(totalAvg)) totalAvg = 0;
+                      if(totalAvg == "Infinity") totalAvg = 0;
+                    }
+                    
+                    if (duration == "30days"){
+                      iOSAvg = parseFloat(docsRead30daysArr[key].ios)/parseFloat(activeUsersArrForAv[key].ios);
+                      if (isNaN(iOSAvg)) iOSAvg = 0;
+                      if(iOSAvg == "Infinity") iOSAvg = 0;
+                      androidAvg = parseFloat(docsRead30daysArr[key].android)/parseFloat(activeUsersArrForAv[key].android);
+                      if (isNaN(androidAvg)) androidAvg = 0;
+                      if(androidAvg == "Infinity") androidAvg = 0;
+                      totalAvg = parseInt(appsession30daysArr[key].total)/parseInt(activeUsersArrForAv[key].total);
+                      if (isNaN(totalAvg)) totalAvg = 0;
+                      if(totalAvg == "Infinity") totalAvg = 0;
+                    }
+
+                    // objAvg = {day:activeUsersArrForAv[key].day,ios:iOSAvg,android:androidAvg,total:totalAvg};
+                    //objAvg = {day:activeUsersArrForAv[key].day,ios:roundTo(iOSAvg,2),android:roundTo(androidAvg,2)};
+                    objAvg = {day:activeUsersArrForAv[key].day,ios:iOSAvg,android:androidAvg,total:activeUsersArrForAv[key].total,totalAvg:totalAvg};
+                    docsReadArrAvg.push(objAvg);
+                    
+                  }
+                  if (duration == "7days") {docsRead7daysArrAvg = docsReadArrAvg; console.log("set 7 days arr of app session7avg");}
+                  if (duration == "30days"){docsRead30daysArrAvg = docsReadArrAvg; console.log("set 30 days arr of appsession30avg");}
+                  
+                  resolve("Docs read " + duration + " Data Collected! ");
+                }
+              });
             }
-          }
+          });
         });
       } else 
       {
@@ -839,81 +1111,119 @@ module.exports = {
 
         console.log(start_date);
         console.log(end_date);
-        con.query("SELECT DATE(t1.received_at) AS Date,SUM(case when t1.context_device_type = 'ios' then 1 else 0 end) as ios,SUM(case when t1.context_device_type = 'android' then 1 else 0 end) as android FROM " + config.mysql_database + ".share_document_sql t1 INNER JOIN " + config.mysql_database + ".company_details t2 ON t1.context_traits_company_id = t2.company_id WHERE t2.company_id=? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY DATE(t1.received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
-        {
-          if (err) {
-          console.log("error occurred" + err);
-          resolve("Error Occurred during Docs shared" + duration + " capture! ");
-          }
-          else
-          {      
-            var docsSharedArr = [];
-            var endDate = new Date(end_date);
-            for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
-            {
-              var obj;
-              var boolSetFromDB = 0;
-              var dateDataPoint = new Date(d);
-            //console.log(dateDataPoint);
-              for(var key in results) 
-              {
-                var row = results[key];
-                //console.log(row.Date);
-                if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
-                  obj = {day:row.Date,ios:row.ios,android:row.android};
-                  boolSetFromDB = 1;
-                  break;
-                }
-              }
-              if (boolSetFromDB == 0) {
-                obj = {day:dateDataPoint,ios:0,android:0};
-              }
-              docsSharedArr.push(obj);
-              if (duration == "7days") {docsShared7daysArr = docsSharedArr; console.log("set 7 days arr of shared");}
-              if (duration == "30days"){docsShared30daysArr = docsSharedArr; console.log("set 30 days arr of shared");}
-
-              console.log("done with getting data from db, going to resolve arr");
-              /*resolve("Docs shared" + duration + " Data Collected! ");*/
+        con.connect(function (err) {
+          con.query("SELECT DATE(t1.received_at) AS Date,SUM(case when t1.context_device_type = 'ios' then 1 else 0 end) as ios,SUM(case when t1.context_device_type = 'android' then 1 else 0 end) as android,SUM(case when context_device_type = 'ios' then 1 else 0 end + case when context_device_type = 'android' then 1 else 0 end) as total FROM " + config.mysql_database + ".share_document_sql t1 INNER JOIN " + config.mysql_database + ".company_details t2 ON t1.context_traits_company_id = t2.company_id WHERE t2.company_id=? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY DATE(t1.received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+          {
+            if (err) {
+            console.log("error occurred" + err);
+            resolve("Error Occurred during Docs shared" + duration + " capture! ");
             }
-          }
-        });
-        con.query("select DATE(received_at) as Date,(ioss+ios)/2 as avgios,(androids+android)/2 as avgandroid from (select distinct t1.received_at,SUM(case when context_device_type = 'ios' then 1 else 0 end) as ioss,SUM(case when context_device_type = 'android' then 1 else 0 end) as androids from " + config.mysql_database + ".share_document_sql t1 WHERE DATE(t1.received_at)>? and DATE(t1.received_at)<=? AND t1.context_traits_company_id=? GROUP BY DATE(t1.received_at))A cross join (select SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios,SUM(case when context_device_type = 'android' then 1 else 0 end) as android from " + config.mysql_database + ".users_sql t2 WHERE DATE(t2.received_at)>? and DATE(t2.received_at)<=? AND t2.context_traits_company_id=? GROUP BY DATE(t2.received_at))B group by A.received_at",[start_date,end_date,metrics.companyId,start_date,end_date,metrics.companyId], function (err, results, fields) 
-        {
-          if (err) {
-          console.log("error occurred" + err);
-          resolve("Error Occurred during Docs shared Average" + duration + " capture! ");
-          }
-          else
-          {      
-            var docsSharedArrAvg = [];
-            var endDate = new Date(end_date);
-            for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
-            {
-              var obj;
-              var boolSetFromDB = 0;
-              var dateDataPoint = new Date(d);
-            //console.log(dateDataPoint);
-              for(var key in results) 
+            else
+            {      
+              var docsSharedArr = [];
+              var endDate = new Date(end_date);
+              for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
               {
-                var row = results[key];
-                //console.log(row.Date);
-                if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
-                  obj = {day:row.Date,ios:row.avgios,android:row.avgandroid};
-                  boolSetFromDB = 1;
-                  break;
+                var obj;
+                var boolSetFromDB = 0;
+                var dateDataPoint = new Date(d);
+                //console.log(dateDataPoint);
+                for(var key in results) 
+                {
+                  var row = results[key];
+                  //console.log(row.Date);
+                  if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
+                    obj = {day:row.Date,ios:row.ios,android:row.android,total:row.total};
+                    boolSetFromDB = 1;
+                    break;
+                  }
                 }
+                if (boolSetFromDB == 0) {
+                  obj = {day:dateDataPoint,ios:0,android:0,total:0};
+                }
+                docsSharedArr.push(obj);
               }
-              if (boolSetFromDB == 0) {
-                obj = {day:dateDataPoint,ios:0,android:0};
-              }
-              docsSharedArrAvg.push(obj);
-              if (duration == "7days") {docsShared7daysArrAvg = docsSharedArrAvg; console.log("set 7 days arr of shared avg");}
-              if (duration == "30days"){docsShared30daysArrAvg = docsSharedArrAvg; console.log("set 30 days arr of shared avg");}
+                if (duration == "7days") {docsShared7daysArr = docsSharedArr; console.log("set 7 days arr of shared");}
+                if (duration == "30days"){docsShared30daysArr = docsSharedArr; console.log("set 30 days arr of shared");}
 
-              console.log("done with getting data from db, going to resolve arr");
-              resolve("Docs shared Average" + duration + " Data Collected! ");
+                console.log(docsSharedArr);
+                console.log("Done with getting data from db, moving on to avg now, get active users first");
+                
+                con.query("SELECT DATE(received_at) as Date, SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios, SUM(case when context_device_type = 'android' then 1 else 0 end) as android,SUM(case when context_device_type = 'ios' then 1 else 0 end + case when context_device_type = 'android' then 1 else 0 end) as total from " + config.mysql_database + ".users_sql WHERE context_traits_company_id = ? AND DATE(received_at)>? and DATE(received_at)<=? GROUP BY DATE(received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+                {
+                  if (err) {
+                  console.log("error occurred" + err);
+                  resolve("Error Occurred during Active Users Avg " + duration + " capture! ");
+                  }
+                  else
+                  { 
+                    var activeUsersArrForAv = []
+                    var endDate = new Date(end_date);
+                    for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
+                    {
+                      var obj;
+                      var boolSetFromDB = 0;
+                      var dateDataPoint = new Date(d);
+                      for(var key in results) 
+                      {
+                        var row = results[key];
+                        //console.log(row.Date);
+                        if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
+                          obj = {day:row.Date,ios:row.ios,android:row.android,total:row.total};
+                          boolSetFromDB = 1;
+                          break;
+                        }
+                      }
+                      if (boolSetFromDB == 0) {
+                        obj = {day:dateDataPoint,ios:0,android:0,total:0};
+                      }
+                      activeUsersArrForAv.push(obj);
+                    }
+                    
+                    var objAvg;
+                    var docsSharedArrAvg = [];
+                    for(var key in activeUsersArrForAv) {
+
+                      var iOSAvg, androidAvg, totalAvg;
+
+                      if (duration == "7days"){
+                        iOSAvg = parseFloat(docsShared7daysArr[key].ios)/parseFloat(activeUsersArrForAv[key].ios);
+                        if (isNaN(iOSAvg)) iOSAvg = 0;
+                        if(iOSAvg == "Infinity") iOSAvg = 0;
+                        androidAvg = parseFloat(docsShared7daysArr[key].android)/parseFloat(activeUsersArrForAv[key].android);
+                        if (isNaN(androidAvg)) androidAvg = 0;
+                        if(androidAvg == "Infinity") androidAvg = 0;
+                        totalAvg = parseInt(docsShared7daysArr[key].total)/parseInt(activeUsersArrForAv[key].total);
+                        if (isNaN(totalAvg)) totalAvg = 0;
+                        if(totalAvg == "Infinity") totalAvg = 0;
+                      }
+                      
+                      if (duration == "30days"){
+                        iOSAvg = parseFloat(docsShared30daysArr[key].ios)/parseFloat(activeUsersArrForAv[key].ios);
+                        if (isNaN(iOSAvg)) iOSAvg = 0;
+                        if(iOSAvg == "Infinity") iOSAvg = 0;
+                        androidAvg = parseFloat(docsShared30daysArr[key].android)/parseFloat(activeUsersArrForAv[key].android);
+                        if (isNaN(androidAvg)) androidAvg = 0;
+                        if(androidAvg == "Infinity") androidAvg = 0;
+                        totalAvg = parseInt(docsShared30daysArr[key].total)/parseInt(activeUsersArrForAv[key].total);
+                        if (isNaN(totalAvg)) totalAvg = 0;
+                        if(totalAvg == "Infinity") totalAvg = 0;
+                      }
+
+                      // objAvg = {day:activeUsersArrForAv[key].day,ios:iOSAvg,android:androidAvg,total:totalAvg};
+                      //objAvg = {day:activeUsersArrForAv[key].day,ios:roundTo(iOSAvg,2),android:roundTo(androidAvg,2)};
+                      objAvg = {day:activeUsersArrForAv[key].day,ios:iOSAvg,android:androidAvg,totalAvg:totalAvg,total:activeUsersArrForAv[key].total};
+                      docsSharedArrAvg.push(objAvg);
+                      
+                    }
+                    if (duration == "7days") {docsShared7daysArrAvg = docsSharedArrAvg; console.log("set 7 days arr of docs shared 7 avg");}
+                    if (duration == "30days"){docsShared30daysArrAvg = docsSharedArrAvg; console.log("set 30 days arr of docs shared 30 avg");}
+                    console.log(docsSharedArrAvg);
+                    resolve("Docs Shared " + duration + " Data Collected! ");
+                  }
+                });
             }
-          }
+          });
         });
       } else 
       {
@@ -941,81 +1251,122 @@ module.exports = {
 
         console.log(start_date);
         console.log(end_date);
-        con.query("SELECT DATE(t1.received_at) AS Date,SUM(case when t1.context_device_type = 'ios' then 1 else 0 end) as ios,SUM(case when t1.context_device_type = 'android' then 1 else 0 end) as android FROM " + config.mysql_database + ".comment_on_document_sql t1 INNER JOIN " + config.mysql_database + ".company_details t2 ON t1.context_traits_company_id = t2.company_id WHERE t2.company_id=? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY DATE(t1.received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
-        {
-          if (err) {
-          console.log("error occurred" + err);
-          resolve("Error Occurred during comments" + duration + " capture! ");
-          }
-          else
-          {      
-            var commentsArr = [];
-            var endDate = new Date(end_date);
-            for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
-            {
-              var obj;
-              var boolSetFromDB = 0;
-              var dateDataPoint = new Date(d);
-            //console.log(dateDataPoint);
-              for(var key in results) 
-              {
-                var row = results[key];
-                //console.log(row.Date);
-                if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
-                  obj = {day:row.Date,ios:row.ios,android:row.android};
-                  boolSetFromDB = 1;
-                  break;
-                }
-              }
-              if (boolSetFromDB == 0) {
-                obj = {day:dateDataPoint,ios:0,android:0};
-              }
-              commentsArr.push(obj);
-              if (duration == "7days") {comments7daysArr = commentsArr; console.log("set 7 days arr of comments");}
-              if (duration == "30days"){comments30daysArr = commentsArr; console.log("set 30 days arr of comments");}
-
-              console.log("done with getting data from db, going to resolve arr");
-              /*resolve("Docs comments" + duration + " Data Collected! ");*/
+        con.connect(function (err) {
+          //Query for comments
+          con.query("SELECT DATE(t1.received_at) AS Date,SUM(case when t1.context_device_type = 'ios' then 1 else 0 end) as ios,SUM(case when t1.context_device_type = 'android' then 1 else 0 end) as android,SUM(case when context_device_type = 'ios' then 1 else 0 end + case when context_device_type = 'android' then 1 else 0 end) as total FROM " + config.mysql_database + ".comment_on_document_sql t1 INNER JOIN " + config.mysql_database + ".company_details t2 ON t1.context_traits_company_id = t2.company_id WHERE t2.company_id=? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY DATE(t1.received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+          {
+            if (err) {
+            console.log("error occurred" + err);
+            resolve("Error Occurred during comments" + duration + " capture! ");
             }
-          }
-        });
-        con.query("select DATE(received_at) as Date,(ioss+ios)/2 as avgios,(androids+android)/2 as avgandroid from (select distinct t1.received_at,SUM(case when context_device_type = 'ios' then 1 else 0 end) as ioss,SUM(case when context_device_type = 'android' then 1 else 0 end) as androids from " + config.mysql_database + ".comment_on_document_sql t1 WHERE t1.context_traits_company_id=? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY DATE(t1.received_at))A cross join(select SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios,SUM(case when context_device_type = 'android' then 1 else 0 end) as android from " + config.mysql_database + ".users_sql t2 WHERE t2.context_traits_company_id=? AND DATE(t2.received_at)>? and DATE(t2.received_at)<=? GROUP BY DATE(t2.received_at))B group by A.received_at",[metrics.companyId,start_date,end_date,metrics.companyId,start_date,end_date], function (err, results, fields) 
-        {
-          if (err) {
-          console.log("error occurred" + err);
-          resolve("Error Occurred during comments avg" + duration + " capture! ");
-          }
-          else
-          {      
-            var commentsArrAvg = [];
-            var endDate = new Date(end_date);
-            for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
-            {
-              var obj;
-              var boolSetFromDB = 0;
-              var dateDataPoint = new Date(d);
-            //console.log(dateDataPoint);
-              for(var key in results) 
+            else
+            {      
+              var commentsArr = [];
+              var endDate = new Date(end_date);
+              for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
               {
-                var row = results[key];
-                //console.log(row.Date);
-                if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
-                  obj = {day:row.Date,ios:row.avgios,android:row.avgandroid};
-                  boolSetFromDB = 1;
-                  break;
+                var obj;
+                var boolSetFromDB = 0;
+                var dateDataPoint = new Date(d);
+                //console.log(dateDataPoint);
+                for(var key in results) 
+                {
+                  var row = results[key];
+                  //console.log(row.Date);
+                  if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
+                    obj = {day:row.Date,ios:row.ios,android:row.android,total:row.total};
+                    boolSetFromDB = 1;
+                    break;
+                  }
                 }
+                if (boolSetFromDB == 0) {
+                  obj = {day:dateDataPoint,ios:0,android:0,total:0};
+                }
+                commentsArr.push(obj);
               }
-              if (boolSetFromDB == 0) {
-                obj = {day:dateDataPoint,ios:0,android:0};
-              }
-              commentsArrAvg.push(obj);
-              if (duration == "7days") {comments7daysArrAvg = commentsArrAvg; console.log("set 7 days arr of comments avg");}
-              if (duration == "30days"){comments30daysArrAvg = commentsArrAvg; console.log("set 30 days arr of comments avg");}
+                if (duration == "7days") {comments7daysArr = commentsArr; console.log("set 7 days arr of comments");}
+                if (duration == "30days"){comments30daysArr = commentsArr; console.log("set 30 days arr of comments");}
 
-              console.log("done with getting data from db, going to resolve arr");
-              resolve("Docs comments" + duration + " Data Collected! ");
+                console.log(commentsArr);
+                console.log("Done with getting data from db, moving on to avg now, get active users first");
+                //active users
+                con.query("SELECT DATE(received_at) as Date, SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios, SUM(case when context_device_type = 'android' then 1 else 0 end) as android,SUM(case when context_device_type = 'ios' then 1 else 0 end + case when context_device_type = 'android' then 1 else 0 end) as total from " + config.mysql_database + ".users_sql WHERE context_traits_company_id = ? AND DATE(received_at)>? and DATE(received_at)<=? GROUP BY DATE(received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+                {
+                  if (err) {
+                  console.log("error occurred" + err);
+                  resolve("Error Occurred during Active Users Avg " + duration + " capture! ");
+                  }
+                  else
+                  { 
+                    var activeUsersArrForAv = []
+                    var endDate = new Date(end_date);
+                    for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
+                    {
+                      var obj;
+                      var boolSetFromDB = 0;
+                      var dateDataPoint = new Date(d);
+                      for(var key in results) 
+                      {
+                        var row = results[key];
+                        //console.log(row.Date);
+                        if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
+                          obj = {day:row.Date,ios:row.ios,android:row.android,total:row.total};
+                          boolSetFromDB = 1;
+                          break;
+                        }
+                      }
+                      if (boolSetFromDB == 0) {
+                        obj = {day:dateDataPoint,ios:0,android:0,total:0};
+                      }
+                      activeUsersArrForAv.push(obj);
+                    }
+                    
+                    var objAvg;
+                    var commentsArrAvg = [];
+                    for(var key in activeUsersArrForAv) {
+
+                      var iOSAvg, androidAvg, totalAvg;
+
+                      if (duration == "7days"){
+                        iOSAvg = parseFloat(comments7daysArr[key].ios)/parseFloat(activeUsersArrForAv[key].ios);
+                        if (isNaN(iOSAvg)) iOSAvg = 0;
+                        if(iOSAvg == "Infinity") iOSAvg = 0;
+                        androidAvg = parseFloat(comments7daysArr[key].android)/parseFloat(activeUsersArrForAv[key].android);
+                        if (isNaN(androidAvg)) androidAvg = 0;
+                        if(androidAvg == "Infinity") androidAvg = 0;
+                        totalAvg = parseInt(comments7daysArr[key].total)/parseInt(activeUsersArrForAv[key].total);
+                        if (isNaN(totalAvg)) totalAvg = 0;
+                        if(totalAvg == "Infinity") totalAvg = 0;
+                      }
+                      
+                      if (duration == "30days"){
+                        iOSAvg = parseFloat(comments30daysArr[key].ios)/parseFloat(activeUsersArrForAv[key].ios);
+                        if (isNaN(iOSAvg)) iOSAvg = 0;
+                        if(iOSAvg == "Infinity") iOSAvg = 0;
+                        androidAvg = parseFloat(comments30daysArr[key].android)/parseFloat(activeUsersArrForAv[key].android);
+                        if (isNaN(androidAvg)) androidAvg = 0;
+                        if(androidAvg == "Infinity") androidAvg = 0;
+                        totalAvg = parseInt(comments30daysArr[key].total)/parseInt(activeUsersArrForAv[key].total);
+                        if (isNaN(totalAvg)) totalAvg = 0;
+                        if(totalAvg == "Infinity") totalAvg = 0;
+                      }
+
+                      // objAvg = {day:activeUsersArrForAv[key].day,ios:iOSAvg,android:androidAvg,total:totalAvg};
+                      //objAvg = {day:activeUsersArrForAv[key].day,ios:roundTo(iOSAvg,2),android:roundTo(androidAvg,2)};
+                      objAvg = {day:activeUsersArrForAv[key].day,ios:iOSAvg,android:androidAvg,totalAvg:totalAvg,total:activeUsersArrForAv[key].total};
+                      commentsArrAvg.push(objAvg);
+                      //console.log("average of comments");
+                      //console.log(commentsArrAvg);
+                      
+                    }
+                    if (duration == "7days") {comments7daysArrAvg = commentsArrAvg; console.log("set 7 days arr of comments 7 avg");}
+                    if (duration == "30days"){comments30daysArrAvg = commentsArrAvg; console.log("set 30 days arr of comments30 avg");}
+                    console.log(commentsArrAvg);
+                    resolve("Comments " + duration + " Data Collected! ");
+                  }
+                });
             }
-          }
+          });
         });
       } else 
       {
@@ -1043,83 +1394,121 @@ module.exports = {
 
         console.log(start_date);
         console.log(end_date);
-        con.query("SELECT DATE(t1.received_at) AS Date,SUM(case when t1.context_device_type = 'ios' then 1 else 0 end) as ios,SUM(case when t1.context_device_type = 'android' then 1 else 0 end) as android FROM " + config.mysql_database + ".saved_document_sql t1 INNER JOIN " + config.mysql_database + ".company_details t2 ON t1.context_traits_company_id = t2.company_id WHERE t2.company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? AND is_saved='true' GROUP BY DATE(t1.received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
-        {
-          if (err) {
-          console.log("error occurred" + err);
-          resolve("Error Occurred during Docs saved" + duration + " capture! ");
-          }
-          else
-          {      
-            var docsSavedArr = [];
-            var endDate = new Date(end_date);
-            for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
-            {
-              var obj;
-              var boolSetFromDB = 0;
-              var dateDataPoint = new Date(d);
-            //console.log(dateDataPoint);
-              for(var key in results) 
-              {
-                var row = results[key];
-                //console.log(row.Date);
-                if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
-                  obj = {day:row.Date,ios:row.ios,android:row.android};
-                  boolSetFromDB = 1;
-                  break;
-                }
-              }
-              if (boolSetFromDB == 0) {
-                obj = {day:dateDataPoint,ios:0,android:0};
-              }
-              docsSavedArr.push(obj);
-              
+        con.connect(function (err) {
+          con.query("SELECT DATE(t1.received_at) AS Date,SUM(case when t1.context_device_type = 'ios' then 1 else 0 end) as ios,SUM(case when t1.context_device_type = 'android' then 1 else 0 end) as android,SUM(case when context_device_type = 'ios' then 1 else 0 end + case when context_device_type = 'android' then 1 else 0 end) as total FROM " + config.mysql_database + ".saved_document_sql t1 INNER JOIN " + config.mysql_database + ".company_details t2 ON t1.context_traits_company_id = t2.company_id WHERE t2.company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? AND is_saved='true' GROUP BY DATE(t1.received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+          {
+            if (err) {
+            console.log("error occurred" + err);
+            resolve("Error Occurred during Docs saved" + duration + " capture! ");
             }
-            if (duration == "7days") {saved7daysArr = docsSavedArr; console.log("set 7 days arr of saved");}
-            if (duration == "30days"){saved30daysArr = docsSavedArr; console.log("set 30 days arr of saved");}
-
-            console.log("done with getting data from db, going to resolve arr");
-            /*resolve("Docs saved" + duration + " Data Collected! ");*/
-          }
-        });
-        con.query("select DATE(received_at) as Date,(ioss+ios)/2 as avgios,(androids+android)/2 as avgandroid from (select distinct t1.received_at,SUM(case when context_device_type = 'ios' then 1 else 0 end) as ioss,SUM(case when context_device_type = 'android' then 1 else 0 end) as androids from " + config.mysql_database + ".saved_document_sql t1 WHERE t1.context_traits_company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? AND is_saved='true' GROUP BY DATE(t1.received_at))A cross join(select SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios,SUM(case when context_device_type = 'android' then 1 else 0 end) as android from " + config.mysql_database + ".users_sql t2 WHERE t2.context_traits_company_id = ? AND DATE(t2.received_at)>? and DATE(t2.received_at)<=? GROUP BY DATE(t2.received_at))B group by A.received_at",[metrics.companyId,start_date,end_date,metrics.companyId,start_date,end_date], function (err, results, fields) 
-        {
-          if (err) {
-          console.log("error occurred" + err);
-          resolve("Error Occurred during Docs saved" + duration + " capture! ");
-          }
-          else
-          {      
-            var docsSavedArrAvg = [];
-            var endDate = new Date(end_date);
-            for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
-            {
-              var obj;
-              var boolSetFromDB = 0;
-              var dateDataPoint = new Date(d);
-            //console.log(dateDataPoint);
-              for(var key in results) 
+            else
+            {      
+              var docsSavedArr = [];
+              var endDate = new Date(end_date);
+              for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
               {
-                var row = results[key];
-                //console.log(row.Date);
-                if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
-                  obj = {day:row.Date,ios:row.avgios,android:row.avgandroid};
-                  boolSetFromDB = 1;
-                  break;
+                var obj;
+                var boolSetFromDB = 0;
+                var dateDataPoint = new Date(d);
+                //console.log(dateDataPoint);
+                for(var key in results) 
+                {
+                  var row = results[key];
+                  //console.log(row.Date);
+                  if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
+                    obj = {day:row.Date,ios:row.ios,android:row.android,total:row.total};
+                    boolSetFromDB = 1;
+                    break;
+                  }
                 }
+                if (boolSetFromDB == 0) {
+                  obj = {day:dateDataPoint,ios:0,android:0,total:0};
+                }
+                docsSavedArr.push(obj);
+                
               }
-              if (boolSetFromDB == 0) {
-                obj = {day:dateDataPoint,ios:0,android:0};
-              }
-              docsSavedArrAvg.push(obj);
-              
-            }
-            if (duration == "7days") {saved7daysArrAvg = docsSavedArrAvg; console.log("set 7 days arr of saved avg");}
-            if (duration == "30days"){saved30daysArrAvg = docsSavedArrAvg; console.log("set 30 days arr of saved avg");}
+              if (duration == "7days") {saved7daysArr = docsSavedArr; console.log("set 7 days arr of saved");}
+              if (duration == "30days"){saved30daysArr = docsSavedArr; console.log("set 30 days arr of saved");}
+              console.log(docsSavedArr);
+              console.log("Done with getting data from db, moving on to avg now, get active users first");
+                //active users
+                con.query("SELECT DATE(received_at) as Date, SUM(case when context_device_type = 'ios' then 1 else 0 end) as ios, SUM(case when context_device_type = 'android' then 1 else 0 end) as android,SUM(case when context_device_type = 'ios' then 1 else 0 end + case when context_device_type = 'android' then 1 else 0 end) as total from " + config.mysql_database + ".users_sql WHERE context_traits_company_id = ? AND DATE(received_at)>? and DATE(received_at)<=? GROUP BY DATE(received_at)",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+                {
+                  if (err) {
+                  console.log("error occurred" + err);
+                  resolve("Error Occurred during Active Users Avg " + duration + " capture! ");
+                  }
+                  else
+                  { 
+                    var activeUsersArrForAv = []
+                    var endDate = new Date(end_date);
+                    for (var d = new Date(start_date); d <= endDate; d.setDate(d.getDate() + 1)) 
+                    {
+                      var obj;
+                      var boolSetFromDB = 0;
+                      var dateDataPoint = new Date(d);
+                      for(var key in results) 
+                      {
+                        var row = results[key];
+                        //console.log(row.Date);
+                        if ((new Date(row.Date)).valueOf() == dateDataPoint.valueOf()) {
+                          obj = {day:row.Date,ios:row.ios,android:row.android,total:row.total};
+                          boolSetFromDB = 1;
+                          break;
+                        }
+                      }
+                      if (boolSetFromDB == 0) {
+                        obj = {day:dateDataPoint,ios:0,android:0,total:0};
+                      }
+                      activeUsersArrForAv.push(obj);
+                    }
+                    
+                    var objAvg;
+                    var savesArrAvg = [];
+                    for(var key in activeUsersArrForAv) {
 
-            console.log("done with getting data from db, going to resolve arr");
-            resolve("Docs saved" + duration + " Data Collected! ");
-          }
+                      var iOSAvg, androidAvg, totalAvg;
+
+                      if (duration == "7days"){
+                        iOSAvg = parseFloat(saved7daysArr[key].ios)/parseFloat(activeUsersArrForAv[key].ios);
+                        if (isNaN(iOSAvg)) iOSAvg = 0;
+                        if(iOSAvg == "Infinity") iOSAvg = 0;
+                        androidAvg = parseFloat(saved7daysArr[key].android)/parseFloat(activeUsersArrForAv[key].android);
+                        if (isNaN(androidAvg)) androidAvg = 0;
+                        if(androidAvg == "Infinity") androidAvg = 0;
+                        totalAvg = parseInt(saved7daysArr[key].total)/parseInt(activeUsersArrForAv[key].total);
+                        if (isNaN(totalAvg)) totalAvg = 0;
+                        if(totalAvg == "Infinity") totalAvg = 0;
+                      }
+                      
+                      if (duration == "30days"){
+                        iOSAvg = parseFloat(saved30daysArr[key].ios)/parseFloat(activeUsersArrForAv[key].ios);
+                        if (isNaN(iOSAvg)) iOSAvg = 0;
+                        if(iOSAvg == "Infinity") iOSAvg = 0;
+                        androidAvg = parseFloat(saved30daysArr[key].android)/parseFloat(activeUsersArrForAv[key].android);
+                        if (isNaN(androidAvg)) androidAvg = 0;
+                        if(androidAvg == "Infinity") androidAvg = 0;
+                        totalAvg = parseInt(saved30daysArr[key].total)/parseInt(activeUsersArrForAv[key].total);
+                        if (isNaN(totalAvg)) totalAvg = 0;
+                        if(totalAvg == "Infinity") totalAvg = 0;
+                      }
+
+                      // objAvg = {day:activeUsersArrForAv[key].day,ios:iOSAvg,android:androidAvg,total:totalAvg};
+                      //objAvg = {day:activeUsersArrForAv[key].day,ios:roundTo(iOSAvg,2),android:roundTo(androidAvg,2)};
+                      objAvg = {day:activeUsersArrForAv[key].day,ios:iOSAvg,android:androidAvg,totalAvg:totalAvg,total:activeUsersArrForAv[key].total};
+                      savesArrAvg.push(objAvg);
+                      //console.log("average of docs saved");
+                      //console.log(savesArrAvg);
+                      
+                    }
+                    if (duration == "7days") {saved7daysArrAvg = savesArrAvg; console.log("set 7 days arr of docs saved 7 avg");}
+                    if (duration == "30days"){saved30daysArrAvg = savesArrAvg; console.log("set 30 days arr of docs saved 30 avg");}
+                    console.log(savesArrAvg);
+                    resolve("Docs Saved " + duration + " Data Collected! ");
+                  }
+                });
+            }
+          });
         });
       } else 
       {
@@ -1128,7 +1517,7 @@ module.exports = {
     });
   },  
   topdocsSetup: function(metrics, duration) {
-    console.log("inside topDocsSetup");
+    console.log("inside topDocsSetup1");
 
     return new Promise(function(resolve, reject) 
     {
@@ -1152,125 +1541,127 @@ module.exports = {
         // start_date = '2018-6-26';
         // end_date = '2018-07-03';
         var finalArr = [];
-        con.query("select document_id, document_title, document_url,channel_name as channel,count(document_id) as view_count from "+config.mysql_database+".view_document_sql where DATE(received_at)>? and DATE(received_at)<=? group by document_id, document_title, document_url order by view_count desc limit 11",[start_date,end_date], function (err, results, fields) 
-        {
-          if (err) {
-            console.log("error occurred" + err);
-            resolve("Error Occurred during Top Documents " + duration + " capture! ");
-          }
-          else
-          {     
-            console.log("got some results");
-            console.log(results);
-            var viewsCountArr;
-            var sharesCountArr;
-            var commentsCountArr;
-            var savesCountArr;
-
-            viewsCountArr = results;
-
-            //var topDocsArr = [];
-            var topDocIds = '';
-            for(var key in results) 
-            {
-              var row = results[key];
-              if (row.document_url != 'null') {
-                topDocIds = topDocIds + "'" + row.document_id + "',";
-              }
+        con.connect(function (err) {
+          con.query("select document_id, document_title, document_url,channel_name as channel,count(document_id) as view_count from "+config.mysql_database+".view_document_sql where DATE(received_at)>? and DATE(received_at)<=? group by document_id, document_title, document_url order by view_count desc limit 11",[start_date,end_date], function (err, results, fields) 
+          {
+            if (err) {
+              console.log("error occurred" + err);
+              resolve("Error Occurred during Top Documents " + duration + " capture! ");
             }
-            console.log(topDocIds);
-            var aaa = topDocIds.substring(0, (topDocIds.length)-1);
+            else
+            {     
+              console.log("got some results");
+              console.log(results);
+              var viewsCountArr;
+              var sharesCountArr;
+              var commentsCountArr;
+              var savesCountArr;
 
-            var sharesArr = [];
-            var commentsArr = [];
+              viewsCountArr = results;
 
-            con.query("select document_id, count(document_id) as share_count from "+config.mysql_database+".share_document_sql where document_id in ("+aaa+") and DATE(received_at)>? and DATE(received_at)<=? group by document_id",[start_date,end_date], function (err, resultsShares, fields) 
-            {
-              if (err) {
-                console.log("error occurred" + err);
-                //resolve("Error Occurred during App Install " + duration + " capture! ");
-              } else {
-                 console.log("done done");
-                
-                sharesCountArr = resultsShares;
-
-                con.query("select document_id, count(document_id) as comment_count from "+config.mysql_database+".comment_on_document_sql where document_id in ("+aaa+") and DATE(received_at)>? and DATE(received_at)<=? group by document_id",[start_date,end_date], function (err, resultsComments, fields) 
-                {
-                  if (err) {
-                    console.log("error occurred" + err);
-                    //resolve("Error Occurred during App Install " + duration + " capture! ");
-                  } else {
-                    
-                    commentsCountArr = resultsComments;
-
-                    con.query("select document_id, count(document_id) as save_count from "+config.mysql_database+".saved_document_sql where document_id in ("+aaa+") and DATE(received_at)>? and DATE(received_at)<=? group by document_id",[start_date,end_date], function (err, resultsSaves, fields) 
-                    {
-                      if (err) {
-                        console.log("error occurred" + err);
-                        //resolve("Error Occurred during App Install " + duration + " capture! ");
-                      } else {
-                        savesCountArr = resultsSaves;
-
-                        // console.log(viewsCountArr);
-                        // console.log(sharesCountArr);
-                        // console.log(commentsCountArr);
-                        // console.log(savesCountArr);
-
-                        for (key in viewsCountArr) {
-                          
-                          //console.log(viewsCountArr[key]);
-                          var viewsRow = viewsCountArr[key];
-                          if (viewsRow.document_id != 'null') {
-                            var docId = viewsRow.document_id;
-                            var docTitle = viewsRow.document_title;
-                            var docUrl = viewsRow.document_url;
-                            var docChannel = viewsRow.channel;
-                            var viewsCount = viewsRow.view_count;
-                            var sharesCount = 0; var commentsCount = 0; var savesCount = 0;
-
-                            for(key in sharesCountArr) {
-                              var sharesRow = sharesCountArr[key];
-                              if (sharesRow.document_id == docId) {
-                                sharesCount = sharesRow.share_count;
-                              }
-                            }
-
-                            for(key in commentsCountArr) {
-                              var commentsRow = commentsCountArr[key];
-                              if (commentsRow.document_id == docId) {
-                                commentsCount = commentsRow.comment_count;
-                              }
-                            }
-
-                            for(key in savesCountArr) {
-                              var savesRow = savesCountArr[key];
-                              if (savesRow.document_id == docId) {
-                                savesCount = savesRow.save_count;
-                              }
-                            }
-                            
-                            var obj = {title:docTitle,url:docUrl,channel:docChannel,opens:viewsCount,shares:sharesCount,comments:commentsCount,saves:savesCount};
-                            finalArr.push(obj);
-                          }
-                        }
-
-                        console.log("finally:");
-                        console.log(finalArr);
-
-                        if (duration == "7days") topDocs7daysArr = finalArr;
-                        if (duration == "30days") topDocs30daysArr = finalArr;
-                        //console.log(appInstallsArr);
-                        console.log("done with getting data from db, going to resolve arr topDocs");
-                        resolve("Top Documents " + duration + " Data Collected! ");
-
-                      }
-                    });
-
-                  }
-                });
+              //var topDocsArr = [];
+              var topDocIds = '';
+              for(var key in results) 
+              {
+                var row = results[key];
+                if (row.document_url != 'null') {
+                  topDocIds = topDocIds + "'" + row.document_id + "',";
+                }
               }
-            });           
-          }
+              console.log(topDocIds);
+              var aaa = topDocIds.substring(0, (topDocIds.length)-1);
+
+              var sharesArr = [];
+              var commentsArr = [];
+
+              con.query("select document_id, count(document_id) as share_count from "+config.mysql_database+".share_document_sql where document_id in ("+aaa+") and DATE(received_at)>? and DATE(received_at)<=? group by document_id",[start_date,end_date], function (err, resultsShares, fields) 
+              {
+                if (err) {
+                  console.log("error occurred" + err);
+                  //resolve("Error Occurred during App Install " + duration + " capture! ");
+                } else {
+                   console.log("done done");
+                  
+                  sharesCountArr = resultsShares;
+
+                  con.query("select document_id, count(document_id) as comment_count from "+config.mysql_database+".comment_on_document_sql where document_id in ("+aaa+") and DATE(received_at)>? and DATE(received_at)<=? group by document_id",[start_date,end_date], function (err, resultsComments, fields) 
+                  {
+                    if (err) {
+                      console.log("error occurred" + err);
+                      //resolve("Error Occurred during App Install " + duration + " capture! ");
+                    } else {
+                      
+                      commentsCountArr = resultsComments;
+
+                      con.query("select document_id, count(document_id) as save_count from "+config.mysql_database+".saved_document_sql where document_id in ("+aaa+") and DATE(received_at)>? and DATE(received_at)<=? group by document_id",[start_date,end_date], function (err, resultsSaves, fields) 
+                      {
+                        if (err) {
+                          console.log("error occurred" + err);
+                          //resolve("Error Occurred during App Install " + duration + " capture! ");
+                        } else {
+                          savesCountArr = resultsSaves;
+
+                          // console.log(viewsCountArr);
+                          // console.log(sharesCountArr);
+                          // console.log(commentsCountArr);
+                          // console.log(savesCountArr);
+
+                          for (key in viewsCountArr) {
+                            
+                            //console.log(viewsCountArr[key]);
+                            var viewsRow = viewsCountArr[key];
+                            if (viewsRow.document_id != 'null') {
+                              var docId = viewsRow.document_id;
+                              var docTitle = viewsRow.document_title;
+                              var docUrl = viewsRow.document_url;
+                              var docChannel = viewsRow.channel;
+                              var viewsCount = viewsRow.view_count;
+                              var sharesCount = 0; var commentsCount = 0; var savesCount = 0;
+
+                              for(key in sharesCountArr) {
+                                var sharesRow = sharesCountArr[key];
+                                if (sharesRow.document_id == docId) {
+                                  sharesCount = sharesRow.share_count;
+                                }
+                              }
+
+                              for(key in commentsCountArr) {
+                                var commentsRow = commentsCountArr[key];
+                                if (commentsRow.document_id == docId) {
+                                  commentsCount = commentsRow.comment_count;
+                                }
+                              }
+
+                              for(key in savesCountArr) {
+                                var savesRow = savesCountArr[key];
+                                if (savesRow.document_id == docId) {
+                                  savesCount = savesRow.save_count;
+                                }
+                              }
+                              
+                              var obj = {title:docTitle,url:docUrl,channel:docChannel,opens:viewsCount,shares:sharesCount,comments:commentsCount,saves:savesCount};
+                              finalArr.push(obj);
+                            }
+                          }
+
+                          console.log("finally:");
+                          console.log(finalArr);
+
+                          if (duration == "7days") topDocs7daysArr = finalArr;
+                          if (duration == "30days") topDocs30daysArr = finalArr;
+                          console.log(finalArr);
+                          console.log("Done with getting data from db, going to resolve arr topDocs");
+                          resolve("Top Documents " + duration + " Data Collected! ");
+
+                        }
+                      });
+
+                    }
+                  });
+                }
+              });           
+            }
+          });
         });
       } 
       else 
@@ -1284,7 +1675,6 @@ module.exports = {
 
     return new Promise(function(resolve, reject) 
     {
-    /* metrics.activeUsers = true;*/
       if (metrics.topUsers == true) 
       {
         if (duration == "7days" && metrics.topUsers7 == true) {
@@ -1299,109 +1689,131 @@ module.exports = {
 
         console.log(start_date);
         console.log(end_date);
-        con.query("select t1.context_traits_first_name as firstname,t1.context_traits_last_name as lastname,t1.context_traits_email as mail,COUNT(t2.user_id) as count from " + config.mysql_database + ".users_sql t1 inner JOIN " + config.mysql_database + ".foreground_sql t2 on t1.context_traits_user_id = t2.user_id where t1.context_traits_company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY t2.user_id order by count DESC LIMIT 10",[metrics.companyId,start_date,end_date], function (err, results, fields) 
-        {
-          if (err) {
-          console.log("error occurred" + err);
-          resolve("Error Occurred during Top Users " + duration + " capture! ");
-          }
-          else
-          {         
-            var topUsersSessionArr = [];
-            for(var key in results) 
-            {
-              var row = results[key];
-              var obj = {first:row.firstname,last:row.lastname,email:row.mail,count:row.count};
-              topUsersSessionArr.push(obj);
+        con.connect(function (err) {
+          con.query("Set sql_mode=('STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION')",  function (err, results, fields) 
+          {
+            if (err) {
+              console.log("Error when setting sql_mode");
+            } else {
+              console.log("Successfully set sql_mode");
             }
-            if (duration == "7days") {topUsers7daysArr = topUsersSessionArr; console.log("set 7 days arr of topuser");}
-            if (duration == "30days"){topUsers30daysArr = topUsersSessionArr; console.log("set 30 days arr of topuser");}
-           /* topUsers7daysArr = topUsersSessionArr; */
-            /*console.log("set 7 days arr of topuser");
-            console.log("done with getting data from db, going to resolve arr top users session");*/
-           /* resolve("top users session" + duration + " Data Collected! ");*/
-            //top users in articles read
-            con.query("SELECT DATE(t1.received_at) AS Date,t1.context_traits_first_name as firstname,t1.context_traits_last_name as lastname,t1.context_traits_email as mail,count(t1.document_title) as articles_read FROM " + config.mysql_database + ".view_document_sql t1 INNER JOIN " + config.mysql_database + ".users_sql t2 ON t1.user_id = t2.context_traits_user_id WHERE t1.context_traits_company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY t1.user_id order by articles_read DESC LIMIT 10",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+            con.query("select t1.context_traits_first_name as firstname,t1.context_traits_last_name as lastname,t1.context_traits_email as mail,COUNT(t2.user_id) as count from " + config.mysql_database + ".users_sql t1 inner JOIN " + config.mysql_database + ".foreground_sql t2 on t1.context_traits_user_id = t2.user_id where t1.context_traits_company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY t2.user_id order by count DESC LIMIT 10",[metrics.companyId,start_date,end_date], function (err, sesResults, fields) 
             {
               if (err) {
-                console.log("error occurred" + err);
-                /*resolve("Error Occurred during App Install " + duration + " capture! ");*/
+              console.log("Error occurred during Top Users by sessions capture: " + err);
+              resolve("Error Occurred during Top Users " + duration + " capture! ");
               }
               else
               {         
-                var topUsersReadArr = [];
-                for(var key in results) 
+                var topUsersSessionArr = [];
+                for(var key in sesResults) 
                 {
-                  var row = results[key];
-                  var obj = {first:row.firstname,last:row.lastname,email:row.mail,count:row.articles_read};
-                  topUsersReadArr.push(obj);
+                  var row = sesResults[key];
+                  var obj = {first:row.firstname,last:row.lastname,email:row.mail,count:row.count};
+                  topUsersSessionArr.push(obj);
                 }
-                if (duration == "7days") {topUsersRead7daysArr = topUsersReadArr; console.log("set 7 days arr of topuser");}
-                if (duration == "30days"){topUsersRead30daysArr = topUsersReadArr; console.log("set 30 days arr of topuser");}
-                console.log("done with getting data from db, going to resolve arr top users read");
-                /*resolve("top users read" + duration + " Data Collected! ");*/
-
-                //top users by comments
-                con.query("SELECT t1.context_traits_first_name as firstname,t1.context_traits_last_name as lastname,t1.context_traits_email as mail,count(t1.document_title) as Count_of_comments FROM " + config.mysql_database + ".comment_on_document_sql t1 INNER JOIN " + config.mysql_database + ".users_sql t2 ON t1.user_id = t2.context_traits_user_id WHERE t1.context_traits_company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY t1.user_id order by Count_of_comments DESC LIMIT 10",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+                
+                if (duration == "7days") {topUsers7daysArr = topUsersSessionArr; console.log("set 7 days arr of topuser session");}
+                if (duration == "30days"){topUsers30daysArr = topUsersSessionArr; console.log("set 30 days arr of topuser session");}
+               
+                //top users in articles read
+                con.query("SELECT DATE(t1.received_at) AS Date,t1.context_traits_first_name as firstname,t1.context_traits_last_name as lastname,t1.context_traits_email as mail,count(t1.document_title) as articles_read FROM " + config.mysql_database + ".view_document_sql t1 INNER JOIN " + config.mysql_database + ".users_sql t2 ON t1.user_id = t2.context_traits_user_id WHERE t1.context_traits_company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY t1.user_id order by articles_read DESC LIMIT 10",[metrics.companyId,start_date,end_date], function (err, readresults, fields) 
                 {
                   if (err) {
-                    console.log("error occurred" + err);
+                    console.log("Error occurred during Top Users by articles read capture: " + err);
                     /*resolve("Error Occurred during App Install " + duration + " capture! ");*/
                   }
                   else
                   {         
-                    var topUsersCommArr = [];
-                    for(var key in results) 
+                    var topUsersReadArr = [];
+                    for(var key in readresults) 
                     {
-                      var row = results[key];
-                      var obj = {first:row.firstname,last:row.lastname,email:row.mail,count:row.Count_of_comments};
-                      topUsersCommArr.push(obj);
+                      var row = readresults[key];
+                      var obj = {first:row.firstname,last:row.lastname,email:row.mail,count:row.articles_read};
+                      topUsersReadArr.push(obj);
                     }
-                    if (duration == "7days") {topUsersComm7daysArr = topUsersCommArr; console.log("set 7 days arr of topuser");}
-                    if (duration == "30days"){topUsersComm30daysArr = topUsersCommArr; console.log("set 30 days arr of topuser");}
+                    
+                    if (duration == "7days") {topUsersRead7daysArr = topUsersReadArr; console.log("set 7 days arr of topuser read");}
+                    if (duration == "30days"){topUsersRead30daysArr = topUsersReadArr; console.log("set 30 days arr of topuser read");}
                     console.log("done with getting data from db, going to resolve arr top users read");
-                    /*resolve("top users comments" + duration + " Data Collected! ");*/
 
-                    // top users by shares
-                    con.query("SELECT t1.context_traits_first_name as firstname,t1.context_traits_last_name as lastname,t1.context_traits_email as mail,count(t1.document_title) as Count_of_documents_shared FROM " + config.mysql_database + ".share_document_sql t1 INNER JOIN " + config.mysql_database + ".users_sql t2 ON t1.user_id = t2.context_traits_user_id WHERE t1.context_traits_company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY t1.user_id order by Count_of_documents_shared DESC LIMIT 10",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+                    //top users by comments
+                    con.query("SELECT t1.context_traits_first_name as firstname,t1.context_traits_last_name as lastname,t1.context_traits_email as mail,count(t1.document_title) as Count_of_comments FROM " + config.mysql_database + ".comment_on_document_sql t1 INNER JOIN " + config.mysql_database + ".users_sql t2 ON t1.user_id = t2.context_traits_user_id WHERE t1.context_traits_company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY t1.user_id order by Count_of_comments DESC LIMIT 10",[metrics.companyId,start_date,end_date], function (err, commResults, fields) 
                     {
                       if (err) {
-                        console.log("error occurred" + err);
+                        console.log("Error occurred during Top Users by comments capture: " + err);
                         /*resolve("Error Occurred during App Install " + duration + " capture! ");*/
                       }
                       else
                       {         
-                        var topUsersShareArr = [];
-                        for(var key in results) 
+                        var topUsersCommArr = [];
+                        for(var key in commResults) 
                         {
-                          var row = results[key];
-                          var obj = {first:row.firstname,last:row.lastname,email:row.mail,count:row.Count_of_documents_shared};
-                          topUsersShareArr.push(obj);
+                          var row = commResults[key];
+                          var obj = {first:row.firstname,last:row.lastname,email:row.mail,count:row.Count_of_comments};
+                          topUsersCommArr.push(obj);
                         }
-                        if (duration == "7days") {topUsersShare7daysArr = topUsersShareArr; console.log("set 7 days arr of topuser");}
-                        if (duration == "30days"){topUsersShare30daysArr = topUsersShareArr; console.log("set 30 days arr of topuser");}
-                        console.log("done with getting data from db, going to resolve arr top users read");
-                        console.log("printing all top users arrays");
-                        console.log(topUsers7daysArr);
-                        console.log(topUsersRead7daysArr);
-                        console.log(topUsersComm7daysArr);
-                        console.log(topUsersShare7daysArr);
-                        resolve("Top Users Read" + duration + " Data Collected! ");
+                        
+                        if (duration == "7days") {topUsersComm7daysArr = topUsersCommArr; console.log("set 7 days arr of topuser comments");}
+                        if (duration == "30days"){topUsersComm30daysArr = topUsersCommArr; console.log("set 30 days arr of topuser comments");}
+                        console.log("done with getting data from db, going to resolve arr top users comment");
+
+                        // top users by shares
+                        con.query("SELECT t1.context_traits_first_name as firstname,t1.context_traits_last_name as lastname,t1.context_traits_email as mail,count(t1.document_title) as Count_of_documents_shared FROM " + config.mysql_database + ".share_document_sql t1 INNER JOIN " + config.mysql_database + ".users_sql t2 ON t1.user_id = t2.context_traits_user_id WHERE t1.context_traits_company_id = ? AND DATE(t1.received_at)>? and DATE(t1.received_at)<=? GROUP BY t1.user_id order by Count_of_documents_shared DESC LIMIT 10",[metrics.companyId,start_date,end_date], function (err, results, fields) 
+                        {
+                          if (err) {
+                            console.log("Error occurred during Top Users by shares capture: " + err);
+                            /*resolve("Error Occurred during App Install " + duration + " capture! ");*/
+                          }
+                          else
+                          {         
+                            var topUsersShareArr = [];
+                            for(var key in results) 
+                            {
+                              var row = results[key];
+                              var obj = {first:row.firstname,last:row.lastname,email:row.mail,count:row.Count_of_documents_shared};
+                              topUsersShareArr.push(obj);
+                            }
+                            
+                            if (duration == "7days") {topUsersShare7daysArr = topUsersShareArr; console.log("set 7 days arr of topuser shares");}
+                            if (duration == "30days"){topUsersShare30daysArr = topUsersShareArr; console.log("set 30 days arr of topuser shares");}
+                            console.log("done with getting data from db, going to resolve arr top users shares");
+                            console.log("printing all top users arrays");
+                            console.log(topUsers7daysArr);
+                            console.log(topUsersRead7daysArr);
+                            console.log(topUsersComm7daysArr);
+                            console.log(topUsersShare7daysArr);
+                            resolve("Top Users" + duration + " Data Collected! ");
+
+                            
+                          }  
+                        });
+
                       }  
                     });
 
                   }  
                 });
-
+                
               }  
             });
-          }  
+
+          });
+          
         });
       } 
       else 
       {
         resolve("Top Users Metric Not Requested! ");
       }
+    });
+  },
+  closeConnection: function() {
+    console.log("inside closeConnection");
+    return new Promise(function(resolve, reject) 
+    {
+      con.end();
+      resolve("Connection Closed");
     });
   },
   generateExcel: function(template, metrics, dirName) {
@@ -1424,6 +1836,8 @@ module.exports = {
             value_of_appinstalls7days = {appinstalls7:appinstalls7daysArr,
                           appinstalls7Date: [{daterange: metrics.week_back_date+" - "+metrics.end_date}]
                           };
+            console.log("value_of_appinstalls7days");
+            console.log(value_of_appinstalls7days);
             template.substitute("App Installs - 7 Days",value_of_appinstalls7days);
           }
         }
@@ -1649,7 +2063,7 @@ module.exports = {
             console.log("inside top documents 30 days");
             console.log(topDocs30daysArr);
             value_of_topdocx30 = {topdocs30:topDocs30daysArr,
-                        topdocs30Date:[{daterange:metrics.month_back_date+" - "+metrics.end_date}]
+                                  topdocs30Date:[{daterange:metrics.month_back_date+" - "+metrics.end_date}]
                         };
             template.substitute("Top Documents - 30 Days",value_of_topdocx30);
           }
@@ -1661,10 +2075,10 @@ module.exports = {
         {
           var value_of_topusersSession7days;
           console.log("inside metrics topusers");
-          console.log(topUsers7daysArr);
+          /*console.log(topUsers7daysArr);
           console.log(topUsersRead7daysArr);
           console.log(topUsersComm7daysArr);
-          console.log(topUsersShare7daysArr);
+          console.log(topUsersShare7daysArr);*/
           if (typeof topUsers7daysArr != 'undefined' && typeof topUsersRead7daysArr != 'undefined' && typeof topUsersComm7daysArr != 'undefined' && typeof topUsersShare7daysArr != 'undefined') {
             console.log("inside top users session 7 days");
            /* console.log(topUsers7daysArr);*/
@@ -1675,7 +2089,8 @@ module.exports = {
                             topuser7Date:[{daterange:metrics.week_back_date+" - "+metrics.end_date}]
                             };
             console.log("top users session 7 days");
-            template.substitute("Top Performing Users - 7 Days",value_of_topusersSession7days);
+            console.log(value_of_topusersSession7days);
+            template.substitute("Top Users - 7 Days",value_of_topusersSession7days);
             console.log("inside template_call top users");
           }    
         }
@@ -1694,7 +2109,7 @@ module.exports = {
                               topuser30Date:[{daterange:metrics.month_back_date+" - "+metrics.end_date}]
                               };
             console.log("top users session 30 days");
-            template.substitute("Top Performing Users - 30 Days",value_of_topusersSession30days);
+            template.substitute("Top Users - 30 Days",value_of_topusersSession30days);
             console.log("inside template_call top users");
           }
         }

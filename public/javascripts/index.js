@@ -68,7 +68,42 @@ function validateInputs() {
   }
   return error;
 }
+//validation for company inputs
+function validateCompanyInputs()
+{
+  var company_id_validate = document.getElementById("new_company_id").value;
+  var company_name_validate = document.getElementById("new_company_name").value;
+  var errorlog = "";
+  if(company_id_validate == "" || company_name_validate == "")
+  {
+    document.getElementById("newCompany_success_msg").innerHTML = " Fields cannot be empty";
+    setTimeout(function(){ document.getElementById("newCompany_success_msg").innerHTML=""; }, 2000);
+    errorlog = "error";
+  }
+  return errorlog;
+}
+//validation for Admin User Inputs
+function validateAdminUserInputs()
+{
+  var userEmail_validate = document.getElementById("new_admin_user_email").value;
+  var EmailFormat = /^([A-Za-z0-9_\-\.])+\@([meltwater])+\.([A-Za-z]{2,4})$/; // for @meltwater domain users only
+  /*var EmailFormat = /^([A-Za-z0-9_\-\.])+\@([A-Za-z0-9_\-\.])+\.([A-Za-z]{2,4})$/;*/     // for any of the valid @ domain mail_id
+  var errorlog = "";
+  if(userEmail_validate == "")
+  {
+    document.getElementById("newAdmin_success_msg").innerHTML = " Email cannot be empty";
+    setTimeout(function() {document.getElementById("newAdmin_success_msg").innerHTML = ""}, 2000);
+    errorlog = "error";
+  }
+  if (!userEmail_validate.match(EmailFormat)) 
+  {
+    document.getElementById("newAdmin_success_msg").innerHTML = " Only Meltwater Email";
+    setTimeout(function() {document.getElementById("newAdmin_success_msg").innerHTML = ""}, 2000);
+    errorlog = "error";
+  }
 
+  return errorlog;
+}
 
 //gather all user selected values and call the nodejs endpoint to generate the report
 //display the latest reports in Recent Reports div
@@ -107,7 +142,7 @@ function generateReport()
     if(seven_days.checked == true)
     {
       days7 = true;
-      week_back_date = calculateStartDate(end_date, "7");
+      week_back_date = calculateStartDate(end_date, "6");
     }
     else 
     {
@@ -116,7 +151,7 @@ function generateReport()
     if(thirty_days.checked == true)
     {
       days30 = true;
-      month_back_date = calculateStartDate(end_date, "30");
+      month_back_date = calculateStartDate(end_date, "29");
     }
     else 
     {
@@ -340,17 +375,7 @@ function updateUserReports() {
             tReportRowElem.appendChild(tReportCompElem);
             tReportRowElem.appendChild(tReportReportElem);
 
-            tableElem.appendChild(tReportRowElem);
-
-            // var recentReportsElem = document.getElementById("recentreports1");
-            // var divEl = document.createElement("div");
-            // divEl.id = "report";
-            // var el = document.createElement("a");
-            // el.href = location + sub0;
-            // el.id = sub1;
-            // el.innerHTML = sub1;
-            // divEl.appendChild(el);
-            // recentReportsElem.appendChild(divEl);                      
+            tableElem.appendChild(tReportRowElem);                    
           }                      
         }
         var recentReportsElem = document.getElementById("recentreports");
@@ -365,9 +390,85 @@ function updateUserReports() {
 }
 
 function updateAllReports() {
-  //alert("inside updateAllReports(), nothing in the function yet");
-  //make an ajax call to /getAllReports in node app.js and implement the code in there
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      if (this.responseText == "No recent exports" || this.responseText == "no reports for user") {
+        document.getElementById("recentreportsadmin").innerHTML = "<span>None available at the moment</span>"
+      } else {
+        var reports = JSON.parse(this.responseText);
+        /*alert(reports);*/
+        //create a table to append to recentreports div
+        var tableElem = document.createElement("table");
+        tableElem.class = "TFtable";
+        //create the headers for that table;
+        var tHeaderRowElem = document.createElement("tr");
+        var tHeaderDateElem = document.createElement("th");
+        tHeaderDateElem.innerHTML = "Date";
+        var tHeaderCompElem = document.createElement("th");
+        tHeaderCompElem.innerHTML = "Company";
+        var tHeaderUserIdElem = document.createElement("th");
+        tHeaderUserIdElem.innerHTML = "User";
+        var tHeaderReportElem = document.createElement("th");
+        tHeaderReportElem.innerHTML = "Report";
+        tHeaderRowElem.appendChild(tHeaderDateElem);
+        tHeaderRowElem.appendChild(tHeaderCompElem);
+        tHeaderRowElem.appendChild(tHeaderUserIdElem);
+        tHeaderRowElem.appendChild(tHeaderReportElem);
 
+        tableElem.appendChild(tHeaderRowElem);
+
+        for (var key in reports) {
+          var report = reports[key];
+          console.log(report);
+          var repIndex = report.indexOf("EmpAppUsageStats-");
+          if (repIndex > 0) {
+
+            var sub0 = report.substring(report.indexOf("reports"), report.length);
+            //getting the userid from the string
+            var userid = report.substring(90);
+            var username = (userid.split("\\"))[0]; 
+            // alert(username);
+            var sub1 = sub0.substring(sub0.indexOf("EmpAppUsageStats-"), sub0.length);
+            var arr = sub1.split("-");
+            var cname = arr[1];            
+            var ts = (arr[2].split("."))[0];
+            var repDate = (new Date(parseInt(ts))).toString();
+         
+            var tReportRowElem = document.createElement("tr");
+            var tReportDateElem = document.createElement("td");
+
+            tReportDateElem.innerHTML = repDate.substring(0, repDate.indexOf("(")-1);
+            var tReportCompElem = document.createElement("td");
+            tReportCompElem.innerHTML = cname;
+            var tReportUserIdElem = document.createElement("td");
+            tReportUserIdElem.innerHTML = username;
+
+            var tReportReportElem = document.createElement("td");
+            var el = document.createElement("a");
+            el.href = location + sub0;
+            el.id = sub1;
+            el.innerHTML = sub1;
+            tReportReportElem.appendChild(el);
+
+            //tReportReportElem.innerHTML = ;
+            tReportRowElem.appendChild(tReportDateElem);
+            tReportRowElem.appendChild(tReportCompElem);
+            tReportRowElem.appendChild(tReportUserIdElem);
+            tReportRowElem.appendChild(tReportReportElem);
+
+            tableElem.appendChild(tReportRowElem);                   
+          }                      
+        }
+        var recentReportsAdminElem = document.getElementById("recentreportsadmin");
+        recentReportsAdminElem.innerHTML = "";
+        recentReportsAdminElem.appendChild(tableElem);   
+      }
+    }
+  };
+  var url = "getAllReports";
+  xhttp.open("GET", url, true);
+  xhttp.send();
 }
 
 
@@ -387,7 +488,7 @@ function onSignIn(googleUser) {
   $('#google-oauth').submit();
     $("#maindiv").hide();
     // alert("signed out");
-    document.getElementById("error").innerHTML = "ENTER A VALID MELTWATER EMAIL ID"; 
+    document.getElementById("error").innerHTML = "Please try again with your Meltwater email address"; 
     }
     else
     {
@@ -453,17 +554,6 @@ function getCompanies() {
       }
       document.getElementById("companiesList").innerHTML = "";
       for (var key in companies) {
-          //console.log(companies[key]);
-          // if (setCompaniesDropdown == false) {
-          //   var aaa = companies[key];
-          //   //console.log(aaa.name);
-          //   var el = document.createElement("option");
-          //   el.textContent = aaa.name;
-          //   el.value = aaa.name;
-          //   el.id = aaa.id;
-          //   select.appendChild(el);
-          //   setCompaniesDropdown = true;
-          // }
 
           //Update admin section too:
           var aaa = companies[key];
@@ -494,26 +584,34 @@ function getCompanies() {
 
 //add a new company
 function addCompany() {
-  var company_id = document.getElementById("new_company_id").value;
+  var errorlog = validateCompanyInputs();
+  if(errorlog == "")
+  {
+    var company_id = document.getElementById("new_company_id").value;
   var company_name = document.getElementById("new_company_name").value;
+
   xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       // alert(this.responseText);
       if (this.responseText == "success") {
         document.getElementById("newCompany_success_msg").innerHTML = " Added new company!";
-        //document.location.reload(true);
         getCompanies();
+        document.getElementById("new_company_id").value="";
+        document.getElementById("new_company_name").value="";
       } else {
         document.getElementById("newCompany_success_msg").innerHTML = " Error adding company!";
       }
-      setTimeout(function() {document.getElementById("newCompany_success_msg").innerHTML = ""}, 3000);
+      setTimeout(function() {document.getElementById("newCompany_success_msg").innerHTML = ""}, 2000);
     }
   };
   var url = "addNewCompany?company_id="+company_id+"&company_name="+company_name;
   //alert(url);
   xhttp.open("GET", url, true);
   xhttp.send();
+}else{
+  return false;
+}  
 }
 
 //delete a company 
@@ -536,7 +634,7 @@ function deleteCompany() {
           } else {
             document.getElementById("delete_success_msg").innerHTML = " Error deleting company!";
           }     
-          setTimeout(function() {document.getElementById("delete_success_msg").innerHTML = ""}, 3000);
+          setTimeout(function() {document.getElementById("delete_success_msg").innerHTML = ""}, 2000);
         }
       };
       var url = "deleteCompany?company_name="+company_name;
@@ -554,14 +652,10 @@ function checkIfAdminUser(userId) {
 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      
+    if (this.readyState == 4 && this.status == 200) {   
       //alert(this.responseText);
-
-      document.getElementById('isAdminUser').value = this.responseText;
-      
+      document.getElementById('isAdminUser').value = this.responseText;     
       displayRequiredContainers(this.responseText);
-
     }
   };
   //alert("sending for admin check: " + userId);
@@ -573,27 +667,36 @@ function checkIfAdminUser(userId) {
 
 //add an admin user
   function addAdminUser() {
-    var userEmail = document.getElementById("new_admin_user_email").value;
-    xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-      if (this.readyState == 4 && this.status == 200) {
-        /*alert(this.responseText);*/
-        if (this.responseText == "success") {
-          document.getElementById("newAdmin_success_msg").innerHTML = " Added new admin!"
-          setTimeout(function() {document.getElementById("newAdmin_success_msg").innerHTML = ""}, 3000);
-          //document.location.reload(true);
-          updateAdminsSection();
-        } else {
-          document.getElementById("newAdmin_success_msg").innerHTML = " Error adding admin!";
-          setTimeout(function() {document.getElementById("newAdmin_success_msg").innerHTML = ""}, 3000);
-        }
+    var errorlog = validateAdminUserInputs();
+    if(errorlog == "")
+    {
+     var userEmail = document.getElementById("new_admin_user_email").value;
+      xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          /*alert(this.responseText);*/
+          if (this.responseText == "success") {
+            document.getElementById("newAdmin_success_msg").innerHTML = " Added new admin!"
+            setTimeout(function() {document.getElementById("newAdmin_success_msg").innerHTML = ""}, 2000);
+            document.getElementById("new_admin_user_email").value="";
+            //document.location.reload(true);
+            updateAdminsSection();
+          } else {
+            document.getElementById("newAdmin_success_msg").innerHTML = " Error adding admin!";
+            setTimeout(function() {document.getElementById("newAdmin_success_msg").innerHTML = ""}, 2000);
+          }
 
-      }
-    };
-    var url = "addAdminUser?email="+userEmail;
-    //alert(url);
-    xhttp.open("GET", url, true);
-    xhttp.send();
+        }
+      };
+      var url = "addAdminUser?email="+userEmail;
+      //alert(url);
+      xhttp.open("GET", url, true);
+      xhttp.send();
+    }else{
+      return false;
+  }  
+
+   
   }
 
 //delete an admin user
@@ -629,22 +732,15 @@ function deleteAdminUser() {
 }
 
 function updateAdminsSection() {
-  //alert("inside updateAdminsSection, nothing in it yet");
-  //list all the admins here by making a call to /getAllAdmins in app.js
-  //create another in app.js for /addNewAdmin
+ 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      
-      //alert(this.responseText);
+    admins = JSON.parse(this.responseText);
       document.getElementById("adminUsersList").innerHTML = "";
-      admins = JSON.parse(this.responseText);
-      //alert(companies);
+     
       for (var key in admins) {
-          //console.log(companies[key]);
           var aaa = admins[key];
-          //console.log(aaa.name);
-          //<input type='radio' class='radioBtn' name='radioBtn' value='".$id."' />
           var adminUsersListElem = document.getElementById("adminUsersList");
           var elBr = document.createElement("br");
           var el = document.createElement("input");
@@ -669,6 +765,7 @@ function updateAdminsSection() {
   xhttp.send();
 }
 
+
 function updateConfigSection() {
  // alert("inside updateConfigSection, nothing in it yet");
   //list all the variables in config.js
@@ -683,6 +780,32 @@ function updateContainers(isAdmin) {
   } else {
     updateUserReports();
   }
+}
+
+function getDBConfig()
+{
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {   
+      alert(this.responseText);
+    }
+  };
+  var url = "getDBConfig";
+  xhttp.open("GET", url, true);
+  xhttp.send();
+}
+
+function UpdateDBConfig()
+{
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {   
+      alert(this.responseText);
+    }
+  };
+  var url = "UpdateDBConfig";
+  xhttp.open("GET", url, true);
+  xhttp.send();
 }
 
 function displayRequiredContainers(isAdmin) {
