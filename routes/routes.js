@@ -307,10 +307,6 @@ router.get('/generateReport', function (req, res) {
         })
         .then(function(result) {
           console.log(result);
-          return utils.closeConnection();
-        })
-        .then(function(result) {
-          console.log(result);
           return utils.generateExcel(template, metrics, __dirname);
         })
         .then(function(result) {
