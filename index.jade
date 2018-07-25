@@ -1,0 +1,285 @@
+doctype html
+html
+  head
+    title Employee Report App
+    meta(charset='utf8mb4')
+    link(rel='stylesheet', href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css')
+    link(rel='stylesheet', type='text/css', href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css')
+    // styling
+    link(href='https://fonts.googleapis.com/css?family=Open+Sans', rel='stylesheet')
+    link(rel='stylesheet', type='text/css', href='/stylesheets/recent-reports.css')
+    link(rel='stylesheet', type='text/css', href='/stylesheets/loginpage.css')
+    link(rel='stylesheet', type='text/css', href='/stylesheets/titlebar.css')
+    // date picker
+    script(type='text/javascript', src='https://cdn.jsdelivr.net/jquery/latest/jquery.min.js')
+    script(type='text/javascript', src='https://cdn.jsdelivr.net/momentjs/latest/moment.min.js')
+    script(type='text/javascript', src='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js')
+    link(rel='stylesheet', type='text/css', href='https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css')
+    link(href='http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css', rel='stylesheet', type='text/css')
+    script(src='http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js')
+    script(src='http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js')
+    // google signin
+    //localhost:3000:
+    //meta(name='google-signin-client_id', content='437351084896-43njc43h9o8rpmgasood068o3ns69aib.apps.googleusercontent.com')
+    //localhost:8081:
+    //meta(name='google-signin-client_id', content='169338173530-0918jbgquhbqu7v9i3dv4qcf3v92e9ta.apps.googleusercontent.com')
+    //http://empappforawsbs.ap-southeast-2.elasticbeanstalk.com:
+    // meta(name='google-signin-client_id', content='352976347687-hi728b7nnqim422i63a7rgu4d4acadph.apps.googleusercontent.com')
+    //http://empappforawsbs1-env.ap-southeast-2.elasticbeanstalk.com/
+    meta(name='google-signin-client_id', content='352976347687-bimjv9tirmhher13870emh952bb0dt2k.apps.googleusercontent.com')
+    //meta(name='google-signin-client_id', content='169338173530-0918jbgquhbqu7v9i3dv4qcf3v92e9ta.apps.googleusercontent.com')
+    script(src='https://apis.google.com/js/platform.js', async='', defer='')
+    script(type='text/javascript', src='/javascripts/index.js')
+    style(type='text/css').
+      .table-borderless td,
+      .table-borderless th,
+      .table-borderless tr,
+      {
+      border: 0;
+      }
+  body
+    //
+      <div ng-controller="myCtrl">
+      <div>
+    // login page design
+    center
+      #home
+        #maindivIndex
+          .titleBanner
+            table(align='center', bgcolor='#28bbbb', border='0')
+              tbody
+                img#img11(src='images/loginbanner.png', style='margin-bottom: 10px;')
+                tr
+                  td
+                    font(size='6', color='#333435', align='center')
+                      strong(style='margin-top:60px;')  Employee App Reports 
+                tr
+                  td
+                    font(size='3', color='#333435', align='center', style='margin-left:30px;')
+                      | Weekly and Monthly App Usage Reports
+            hr
+            center
+              .name
+                | Sign in with Meltwater Google Account
+                div(style='margin-top:10px;margin-right:330px;')
+                  button#signin.g-signin2(data-onsuccess='onSignIn', style='margin-left:320px;font-size: 5px;')
+                // signin error
+                // <center>
+                br
+                #error.error
+    // banner of landing page
+    .maindiv
+      .sp-title-bar
+        .row
+          .sp-logo-area.col-sm-6
+            img.sp-icon(src='https://media.cdn.gradconnection.com/uploads/d3c9fd45-bab2-4c20-815e-23800abec235-meltwater.png')
+            .sp-title-area
+              p.sp-logo-title Employee App Reports
+              p.sp-logo-subtitle Weekly and Monthly App Usage Reports
+          .sp-right-side-controls.col-sm-6
+            img#profileImage.signout(src='https://d30y9cdsu7xlg0.cloudfront.net/png/567051-200.png', title='signout', style='height:30px', onclick='signOut()')
+            label#email.email(style='color: #000000;')
+      br
+      br
+    // Body of the landing page
+    center
+      .container
+        // For Admins - List/add companies
+        #adminCompanies
+          .card(style='width:800px; height:auto;')
+            .card-body
+              h3 Companies
+              #adminSection
+                table
+                  tr
+                    td
+                      span
+                        strong List of all Companies
+                      #companiesList
+                    td
+                      span
+                        strong Select company and click to delete
+                      #deleteCompany
+                        button.btn(onclick='deleteCompany();') Delete Company
+                        span#delete_success_msg(style='color: red;')
+                      br
+                      br
+                      span
+                        strong Add new company
+                      #addCompany
+                        input#new_company_id(type='text', name='new_company_id', style='margin-bottom: 5px;margin-top: 5px;', size='25', placeholder='MW company id')
+                        br
+                        input#new_company_name(type='text', name='new_company_name', style='margin-top: 5px;margin-bottom: 5px;', size='25', placeholder='MW company name')
+                        br
+                        button.btn(style='margin-top:5px;', onclick='addCompany();') Add Company
+                        span#newCompany_success_msg(style='color: red;')
+        // For Admins - List/add admins
+        #adminAdminUsers
+          .card(style='width:800px; height:auto;')
+            .card-body
+              h3 Admins
+              #adminSection
+                br
+                table
+                  tr
+                    td
+                      span
+                        strong List of all Admin users
+                      #adminUsersList
+                    td
+                      span
+                        strong Select user and click to delete
+                      #deleteAdminUser
+                        button.btn(onclick='deleteAdminUser()') Delete Admin
+                        span#deleteadmin_success_msg(style='color: red;')
+                      br
+                      br
+                      span
+                        strong Add new admin user
+                      #addAdminUser
+                        input#new_admin_user_email(type='text', name='new_admin_user_email', style='margin-bottom: 5px;margin-top: 5px;', size='25', placeholder='@meltwater email address')
+                        br
+                        button.btn(style='margin-top:5px;', onclick='addAdminUser()') Add Admin User
+                        span#newAdmin_success_msg(style='color: red;')
+        // For Admins - DB Config
+        #adminDBConfig
+          .card(style='width:800px; height:auto;')
+            .card-body
+              h3 DB Config
+              #addDBConfig
+              button.btn(style='margin-top:7px;margin-right:5px;margin-bottom:25px;', onclick='getDBConfig()') Download config to make changes
+              button.btn(style='margin-top:7px;margin-left:5px;margin-bottom:25px;', onclick='UpdateDBConfig()') Upload config file
+        // For All - Generate a Report
+        .card(style='width:800px; height:auto;')
+          .card-body
+            h3
+              | Generate a Report
+              span#main_msg(style='color: red;')
+              table.table.no-border
+                tr
+                  td(style='padding-left: 215px;    padding-top: 21px;')
+                    font(size='3') Select a company
+                  td
+                    select#seltype.form-control.seltype_val
+                      option(value='') Choose a company
+                    font(size='3')
+                      span#select_error_msg(style='color: red;')
+                tr
+                  td(style='padding-left: 215px;')
+                    font(size='3')
+                      | Include these
+                      br
+                      |                   Date Ranges:
+                      br
+                    font(size='2') select one or more
+                    br
+                  td
+                    font(size='3')
+                      .form-group
+                        label.checkbox-inline
+                          input#7days(type='checkbox', name='checkervals', value='7days')
+                          | Last 7 Days
+                        br
+                        label.checkbox-inline
+                          input#30days(type='checkbox', name='checkervals', value='30days')
+                          | Past 30 Days
+                        br
+                        span#days_error_msg(style='color: red;')
+                        //
+                          <label class="checkbox-inline">
+                          <input type="checkbox" name="checkerval"  id="oneyear" value="oneyear">This year
+                          </label>
+                        br
+                tr
+                  td(style='padding-left: 215px')
+                    font(size='3')
+                      | End Date:
+                      br
+                    font(size='2')
+                      | For which date should this
+                      br
+                      |                     report be run
+                  td
+                    font(size='3')
+                      input#dateInput.form-controls(type='date', name='date', pattern='\d{1,2}/\d{1,2}/\d{4}', required='')
+                      button(title='', type='button', data-original-title='Remove from list', style='margin-top: 18px;')
+                        // <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>
+                      br
+                      span#enddate_error_msg(style='color: red;')
+                tr
+                  td(style='padding-left: 215px')
+                    font(size='3')
+                      | Include these
+                      br
+                      |                     Metrics:
+                      br
+                    font(size='2')  select one or more
+                  td
+                    font(size='3')
+                      label.checkbox-inline
+                        input#checkAll(type='checkbox',name='checkAll',onchange='checkAll(this)') 
+                        | Select All
+                      br
+                      label.checkbox-inline
+                        input#app_install(type='checkbox', name='checkerval', value='app_install')
+                        | App Installs
+                      br
+                      label.checkbox-inline
+                        input#active_users(type='checkbox', name='checkerval', value='active_users')
+                        | Active Users
+                      br
+                      label.checkbox-inline
+                        input#app_session(type='checkbox', name='checkerval', value='app_session')
+                        | App Sessions
+                      br
+                      label.checkbox-inline
+                        input#doc_read(type='checkbox', name='checkerval', value='doc_read')
+                        | Document Read
+                      br
+                      label.checkbox-inline
+                        input#doc_shared(type='checkbox', name='checkerval')
+                        | Shares
+                      br
+                      label.checkbox-inline
+                        input#doc_comments(type='checkbox', name='checkerval')
+                        | Comments
+                      br
+                      label.checkbox-inline
+                        input#doc_saved(type='checkbox', name='checkerval')
+                        | Saves
+                      br
+                      label.checkbox-inline
+                        input#top_documents(type='checkbox', name='checkerval')
+                        | Top Performing Documents
+                      br
+                      label.checkbox-inline
+                        input#top_users(type='checkbox', name='checkerval')
+                        | Top Performing Users
+                      br
+                      span#metrics_error_msg(style='color: red;')
+                tr
+                  td
+                    .col-md-12.text-center(style='margin-left: 70%; margin-top: 3%;')
+                      center
+                        button#singlebutton.btn(name='singlebutton', onclick='generateReport()') GENERATE REPORT
+                tr
+                  td(colspan='2')
+                    center
+                      #messages(style='display: none; text-align=center')
+              br
+        // For Non-Admins - User specific reports
+        #nonAdminUserReports
+          .card(style='width:800px; height:auto;')
+            .card-body
+              h3 Recent Reports
+              #recentreports
+        // For Admins - All reports
+        #adminUserReports
+          .card(style='width:800px; height:auto;')
+            .card-body
+              h3 Recent Reports
+              #recentreportsadmin
+      // close container div
+    #hiddenVars
+      input#userIdHidden(type='hidden')
+      input#isAdminUser(type='hidden')
